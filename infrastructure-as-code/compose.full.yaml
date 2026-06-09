@@ -1,0 +1,68 @@
+# 로컬 풀스택 통합 테스트용. 백엔드 Dockerfile, 프론트엔드 Dockerfile, Postgres 한 번에 기동.
+#
+# 사용:
+#   cd infrastructure-as-code
+#   docker compose -f compose.full.yaml up --build
+#
+# 접속:
+#   frontend: http://localhost:3000
+#   backend:  http://localhost:8080
+#   postgres: localhost:5432 (tick/tick)
+#
+# 주의: KAKAO_* / JWT_SECRET 은 .env 파일로 주입 (gitignore).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tick-full-postgres
+    environment:
+      POSTGRES_DB: tick
+      POSTGRES_USER: tick
+      POSTGRES_PASSWORD: tick
+      TZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    volumes:
+      - tick_full_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tick -d tick"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: tick-full-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tick
+      SPRING_DATASOURCE_USERNAME: tick
+      SPRING_DATASOURCE_PASSWORD: tick
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      TICK_JWT_SECRET: ${TICK_JWT_SECRET}
+      TICK_CORS_ALLOWED_ORIGINS: http://localhost:3000
+      TICK_AUTH_FRONTEND_CALLBACK_URL: http://localhost:3000/auth/callback
+      TICK_AUTH_FRONTEND_LOGIN_URL: http://localhost:3000/login
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: tick-full-frontend
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
+
+volumes:
+  tick_full_pgdata:
