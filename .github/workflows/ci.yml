@@ -37,6 +37,20 @@ jobs:
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tick
+          POSTGRES_USER: tick
+          POSTGRES_PASSWORD: tick
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tick -d tick"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     defaults:
       run:
         working-directory: backend
@@ -48,6 +62,11 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew build --no-daemon
+        env:
+          SPRING_PROFILES_ACTIVE: ci
+          TICK_JWT_SECRET: ci_only_jwt_secret_not_used_in_production_min_32_bytes
+          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID: ci_dummy
+          SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_SECRET: ci_dummy
       - name: Build docker image
         run: docker build -t tick-backend:ci .
 
