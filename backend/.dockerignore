@@ -1,0 +1,11 @@
+.gradle
+build
+.idea
+.vscode
+*.iml
+.git
+HELP.md
+.env
+.env.local
+src/main/resources/application-local.yml
+src/main/resources/application-prod.yml

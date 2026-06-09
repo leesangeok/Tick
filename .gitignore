@@ -28,6 +28,14 @@ out/
 
 # Terraform / IaC
 .terraform/
+.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
 *.tfvars
+
+# Claude Code (local session data)
+.claude/
+
+# Secrets
+**/application-local.yml
+**/application-prod.yml

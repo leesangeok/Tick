@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: tick
+  profiles:
+    active: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tick
+    username: tick
+    password: tick
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: Asia/Seoul
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-name: Kakao
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - profile_nickname
+              - account_email
+            client-authentication-method: client_secret_post
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+tick:
+  cors:
+    allowed-origins: http://localhost:3000
+  jwt:
+    # secret/ttl 은 application-local.yml 에서 주입
+    secret: ${TICK_JWT_SECRET:}
+    access-ttl-min: ${TICK_JWT_ACCESS_TTL_MIN:60}
+    refresh-ttl-days: ${TICK_JWT_REFRESH_TTL_DAYS:14}
+  auth:
+    frontend-callback-url: ${TICK_FRONTEND_CALLBACK_URL:http://localhost:3000/auth/callback}
+    frontend-login-url: ${TICK_FRONTEND_LOGIN_URL:http://localhost:3000/login}
