@@ -1,8 +1,13 @@
 name: CD
 
+# Frontend 는 Vercel 이 자동 배포함. 이 워크플로우는 backend 만 담당.
+
 on:
   push:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/cd.yml'
   workflow_dispatch:
 
 concurrency:
@@ -10,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  id-token: write # OIDC
+  id-token: write
   contents: read
 
 env:
@@ -19,26 +24,10 @@ env:
   ENVIRONMENT: dev
 
 jobs:
-  changes:
+  push-backend:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'backend/**'
-            frontend:
-              - 'frontend/**'
-
-  push-backend:
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
+      pushed: ${{ steps.build.outputs.pushed }}
     steps:
       - uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
@@ -47,44 +36,26 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - uses: aws-actions/amazon-ecr-login@v2
         id: ecr
-      - name: Build and push backend
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push backend (arm64 for t4g EC2)
+        id: build
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
           REPOSITORY: ${{ env.PROJECT }}-${{ env.ENVIRONMENT }}-backend
           TAG: ${{ github.sha }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$TAG -t $REGISTRY/$REPOSITORY:latest backend
-          docker push $REGISTRY/$REPOSITORY:$TAG
-          docker push $REGISTRY/$REPOSITORY:latest
-
-  push-frontend:
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-      - uses: aws-actions/amazon-ecr-login@v2
-        id: ecr
-      - name: Build and push frontend
-        env:
-          REGISTRY: ${{ steps.ecr.outputs.registry }}
-          REPOSITORY: ${{ env.PROJECT }}-${{ env.ENVIRONMENT }}-frontend
-          TAG: ${{ github.sha }}
-        run: |
-          docker build -t $REGISTRY/$REPOSITORY:$TAG -t $REGISTRY/$REPOSITORY:latest frontend
-          docker push $REGISTRY/$REPOSITORY:$TAG
-          docker push $REGISTRY/$REPOSITORY:latest
+          docker buildx build \
+            --platform linux/arm64 \
+            -t $REGISTRY/$REPOSITORY:$TAG \
+            -t $REGISTRY/$REPOSITORY:latest \
+            --push \
+            backend
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
 
   deploy:
-    needs: [push-backend, push-frontend]
-    if: |
-      always() &&
-      !cancelled() &&
-      (needs.push-backend.result == 'success' || needs.push-frontend.result == 'success')
+    needs: push-backend
+    if: needs.push-backend.outputs.pushed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: aws-actions/configure-aws-credentials@v4

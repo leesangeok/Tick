@@ -13,8 +13,10 @@ class CorsConfig(
 ) {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
+        val patterns = allowedOrigins.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         val config = CorsConfiguration().apply {
-            allowedOrigins = this@CorsConfig.allowedOrigins.split(",").map { it.trim() }
+            // allowedOriginPatterns 는 https://*.vercel.app 같은 wildcard 지원
+            allowedOriginPatterns = patterns
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
             allowedHeaders = listOf("*")
             allowCredentials = true

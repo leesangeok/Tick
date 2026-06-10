@@ -58,3 +58,5 @@ tick:
   auth:
     frontend-callback-url: ${TICK_FRONTEND_CALLBACK_URL:http://localhost:3000/auth/callback}
     frontend-login-url: ${TICK_FRONTEND_LOGIN_URL:http://localhost:3000/login}
+    cookie-same-site: ${TICK_AUTH_COOKIE_SAME_SITE:Lax}
+    cookie-secure: ${TICK_AUTH_COOKIE_SECURE:false}

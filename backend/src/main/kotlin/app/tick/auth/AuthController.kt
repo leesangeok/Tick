@@ -19,6 +19,7 @@ data class MeResponse(
 @RequestMapping("/api/auth")
 class AuthController(
     private val memberRepository: MemberRepository,
+    private val jwtCookies: JwtCookies,
 ) {
     @GetMapping("/me")
     fun me(@AuthenticationPrincipal principal: AuthPrincipal?): ResponseEntity<MeResponse> {
@@ -32,7 +33,7 @@ class AuthController(
 
     @PostMapping("/logout")
     fun logout(response: HttpServletResponse): ResponseEntity<Void> {
-        JwtCookies.clear(response)
+        jwtCookies.clear(response)
         return ResponseEntity.noContent().build()
     }
 }

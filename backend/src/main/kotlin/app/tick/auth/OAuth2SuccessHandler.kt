@@ -13,6 +13,7 @@ class OAuth2SuccessHandler(
     private val provisioner: MemberProvisioner,
     private val jwtProvider: JwtProvider,
     private val jwtProperties: JwtProperties,
+    private val jwtCookies: JwtCookies,
     private val authProperties: AuthProperties,
 ) : SimpleUrlAuthenticationSuccessHandler() {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -29,7 +30,7 @@ class OAuth2SuccessHandler(
 
         val member = provisioner.upsertWithAccount(kakaoId, email, nickname)
         val token = jwtProvider.issueAccessToken(member.id, member.nickname)
-        JwtCookies.write(response, token, (jwtProperties.accessTtlMin * 60).toInt())
+        jwtCookies.write(response, token, (jwtProperties.accessTtlMin * 60).toInt())
 
         log.info("kakao login success kakaoId={} memberId={}", kakaoId, member.id)
         redirectStrategy.sendRedirect(request, response, authProperties.frontendCallbackUrl)

@@ -13,4 +13,6 @@ data class JwtProperties(
 data class AuthProperties(
     val frontendCallbackUrl: String = "http://localhost:3000/auth/callback",
     val frontendLoginUrl: String = "http://localhost:3000/login",
+    val cookieSameSite: String = "Lax",
+    val cookieSecure: Boolean = false,
 )
