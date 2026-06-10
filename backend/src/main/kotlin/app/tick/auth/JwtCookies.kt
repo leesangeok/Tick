@@ -2,26 +2,34 @@ package app.tick.auth
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.stereotype.Component
 
-object JwtCookies {
-    const val ACCESS_TOKEN_COOKIE = "tick_at"
+const val ACCESS_TOKEN_COOKIE = "tick_at"
 
+@Component
+class JwtCookies(private val authProperties: AuthProperties) {
     fun write(response: HttpServletResponse, token: String, maxAgeSec: Int) {
-        // SameSite 직접 제어를 위해 Set-Cookie 헤더 수동 작성.
-        // HTTPS 운영 환경에선 "; Secure" 추가.
-        response.addHeader(
-            "Set-Cookie",
-            "$ACCESS_TOKEN_COOKIE=$token; HttpOnly; Path=/; Max-Age=$maxAgeSec; SameSite=Lax",
-        )
+        response.addHeader("Set-Cookie", buildCookie(token, maxAgeSec))
     }
 
     fun clear(response: HttpServletResponse) {
-        response.addHeader(
-            "Set-Cookie",
-            "$ACCESS_TOKEN_COOKIE=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax",
-        )
+        response.addHeader("Set-Cookie", buildCookie("", 0))
     }
 
-    fun read(request: HttpServletRequest): String? =
-        request.cookies?.firstOrNull { it.name == ACCESS_TOKEN_COOKIE }?.value
+    private fun buildCookie(value: String, maxAgeSec: Int): String {
+        val parts = mutableListOf(
+            "$ACCESS_TOKEN_COOKIE=$value",
+            "HttpOnly",
+            "Path=/",
+            "Max-Age=$maxAgeSec",
+            "SameSite=${authProperties.cookieSameSite}",
+        )
+        if (authProperties.cookieSecure) parts += "Secure"
+        return parts.joinToString("; ")
+    }
+
+    companion object {
+        fun read(request: HttpServletRequest): String? =
+            request.cookies?.firstOrNull { it.name == ACCESS_TOKEN_COOKIE }?.value
+    }
 }
