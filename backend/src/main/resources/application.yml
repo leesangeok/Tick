@@ -40,6 +40,10 @@ spring:
 
 server:
   port: 8080
+  # Caddy (reverse proxy) 가 TLS 종료 후 X-Forwarded-* 헤더로 원본 스킴/host 전달.
+  # 이게 없으면 Spring 이 자기 자신을 http://...:8080 로 인식해서
+  # OAuth redirect_uri 가 http:// 로 나감 → 카카오 KOE006.
+  forward-headers-strategy: native
 
 management:
   endpoints:
