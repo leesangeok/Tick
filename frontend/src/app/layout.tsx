@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
@@ -21,6 +22,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster richColors position="top-center" theme="system" />
         </ThemeProvider>
       </body>
     </html>

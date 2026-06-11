@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { Sparkles, Star } from "lucide-react";
 import { fetchPriceSeries, fetchStock } from "@/services/stockService";
+import { fetchAccount } from "@/services/accountService";
 import { mockNews } from "@/mocks/news";
 import { mockAiReports } from "@/mocks/aiReports";
-import { AvailableCash } from "@/components/account/AvailableCash";
+import { OrderPanel } from "@/components/trading/OrderPanel";
 import {
   formatCurrency,
   formatRelativeTime,
@@ -20,9 +21,10 @@ type PageProps = {
 
 export default async function StockDetailPage({ params }: PageProps) {
   const { symbol } = await params;
-  const [stock, series] = await Promise.all([
+  const [stock, series, account] = await Promise.all([
     fetchStock(symbol),
     fetchPriceSeries(symbol, 60).catch(() => []),
+    fetchAccount().catch(() => null),
   ]);
   if (!stock) notFound();
   const news = mockNews.filter((n) => n.symbol === symbol);
@@ -156,67 +158,12 @@ export default async function StockDetailPage({ params }: PageProps) {
         </div>
 
         <aside className="lg:sticky lg:top-20 lg:self-start">
-          <div className="rounded-lg border border-border bg-card">
-            <div className="grid grid-cols-2 border-b border-border">
-              <button
-                type="button"
-                className="border-r border-border bg-gain/10 px-4 py-3 text-sm font-semibold text-gain"
-              >
-                매수
-              </button>
-              <button
-                type="button"
-                className="px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                매도
-              </button>
-            </div>
-            <div className="space-y-4 p-4">
-              <div className="flex gap-2 text-xs">
-                <button className="flex-1 rounded border border-foreground bg-foreground py-1.5 font-medium text-background">
-                  지정가
-                </button>
-                <button className="flex-1 rounded border border-border py-1.5 text-muted-foreground hover:text-foreground">
-                  시장가
-                </button>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">수량</label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-right text-sm tabular-nums outline-none focus:border-foreground"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">주문 가격</label>
-                <input
-                  type="number"
-                  defaultValue={stock.currentPrice}
-                  className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-right text-sm tabular-nums outline-none focus:border-foreground"
-                />
-              </div>
-              <div className="rounded bg-muted/50 p-3 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">예상 주문 금액</span>
-                  <span className="tabular-nums">0원</span>
-                </div>
-                <div className="mt-1 flex justify-between">
-                  <span className="text-muted-foreground">주문 가능</span>
-                  <AvailableCash />
-                </div>
-              </div>
-              <button
-                type="button"
-                className="w-full rounded bg-gain py-2.5 text-sm font-semibold text-white hover:opacity-90"
-              >
-                매수 주문
-              </button>
-              <p className="text-center text-[10px] text-muted-foreground">
-                모의 주문입니다. 실제 체결되지 않습니다.
-              </p>
-            </div>
-          </div>
+          <OrderPanel
+            stockCode={stock.symbol}
+            stockName={stock.name}
+            currentPrice={stock.currentPrice}
+            availableCash={account?.cash ?? 0}
+          />
         </aside>
       </section>
     </div>
