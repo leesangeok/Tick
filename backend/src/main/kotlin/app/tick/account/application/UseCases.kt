@@ -1,13 +1,38 @@
-package app.tick.account
+package app.tick.account.application
 
-data class AccountResponse(
+import app.tick.account.domain.Account
+import app.tick.common.domain.Money
+
+interface GetAccountUseCase {
+    fun get(memberId: Long): AccountResult
+}
+
+interface DepositUseCase {
+    fun deposit(command: DepositCommand): AccountResult
+}
+
+interface GetPortfolioUseCase {
+    fun get(memberId: Long): PortfolioResult
+}
+
+interface GetTransactionsUseCase {
+    fun list(memberId: Long): List<TransactionResult>
+}
+
+interface ProvisionAccountUseCase {
+    fun ensureFor(memberId: Long, externalId: String, welcomeBonus: Money): Account
+}
+
+data class DepositCommand(val memberId: Long, val amount: Money)
+
+data class AccountResult(
     val id: Long,
     val cash: Long,
     val totalDeposits: Long,
     val realizedProfitLoss: Long,
 )
 
-data class HoldingResponse(
+data class HoldingResult(
     val symbol: String,
     val name: String,
     val quantity: Int,
@@ -18,7 +43,7 @@ data class HoldingResponse(
     val profitRate: Double,
 )
 
-data class PortfolioResponse(
+data class PortfolioResult(
     val cash: Long,
     val totalDeposits: Long,
     val totalAssets: Long,
@@ -31,26 +56,10 @@ data class PortfolioResponse(
     val totalProfitRate: Double,
     val todayProfitLoss: Long,
     val todayProfitRate: Double,
-    val holdings: List<HoldingResponse>,
+    val holdings: List<HoldingResult>,
 )
 
-data class OrderResponse(
-    val id: String,
-    val symbol: String,
-    val stockName: String,
-    val side: String,
-    val orderType: String,
-    val quantity: Int,
-    val price: Int,
-    val filledQuantity: Int?,
-    val status: String,
-    val averageCostAt: Int?,
-    val realizedProfitLoss: Long?,
-    val createdAt: String,
-    val filledAt: String?,
-)
-
-data class TransactionResponse(
+data class TransactionResult(
     val id: String,
     val type: String,
     val amount: Long,
@@ -61,5 +70,3 @@ data class TransactionResponse(
     val realizedProfitLoss: Long?,
     val createdAt: String,
 )
-
-data class DepositRequest(val amount: Long)
