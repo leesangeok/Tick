@@ -26,9 +26,14 @@ variable "region" {
   default = "ap-northeast-2"
 }
 
-variable "state_bucket" {
+variable "account_id" {
+  type        = string
+  description = "AWS account ID — S3 state bucket 이름 (글로벌 unique) 에 prefix 로 사용. terraform.tfvars 또는 -var 로 주입."
+}
+
+variable "project" {
   type    = string
-  default = "tick-tfstate-505947591451"
+  default = "tick"
 }
 
 variable "lock_table" {
@@ -36,8 +41,12 @@ variable "lock_table" {
   default = "tick-tflock"
 }
 
+locals {
+  state_bucket = "${var.project}-tfstate-${var.account_id}"
+}
+
 resource "aws_s3_bucket" "state" {
-  bucket = var.state_bucket
+  bucket = local.state_bucket
 
   tags = {
     Project = "tick"

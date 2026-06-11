@@ -8,12 +8,13 @@ terraform {
     }
   }
 
+  # Partial backend config — bucket / dynamodb_table 은 git 에 박지 않고
+  # `terraform init -backend-config=backend-config.hcl` 로 주입.
+  # backend-config.hcl 작성법은 backend-config.hcl.example 참고.
   backend "s3" {
-    bucket         = "tick-tfstate-505947591451"
-    key            = "envs/dev/terraform.tfstate"
-    region         = "ap-northeast-2"
-    dynamodb_table = "tick-tflock"
-    encrypt        = true
+    key     = "envs/dev/terraform.tfstate"
+    region  = "ap-northeast-2"
+    encrypt = true
   }
 }
 
