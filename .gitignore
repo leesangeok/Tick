@@ -32,6 +32,8 @@ out/
 *.tfstate
 *.tfstate.backup
 *.tfvars
+# partial backend config (실제 값 들어가는 파일만 — .example 은 tracking)
+**/backend-config.hcl
 
 # Claude Code (local session data)
 .claude/

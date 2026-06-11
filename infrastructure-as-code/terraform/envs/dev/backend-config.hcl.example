@@ -1,0 +1,13 @@
+# 이 파일을 backend-config.hcl 로 복사한 뒤 실제 값을 채우고 사용한다.
+# backend-config.hcl 자체는 .gitignore 로 git tracking 에서 제외됨.
+#
+# 사용:
+#   cp backend-config.hcl.example backend-config.hcl
+#   # 아래 값을 본인 환경에 맞게 수정
+#   terraform init -backend-config=backend-config.hcl
+#
+# bucket / lock 테이블 이름은 bootstrap 의 output 으로 확인 가능:
+#   cd ../../../bootstrap && terraform output state_bucket lock_table
+
+bucket         = "tick-tfstate-<AWS_ACCOUNT_ID>"
+dynamodb_table = "tick-tflock"

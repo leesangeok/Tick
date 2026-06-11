@@ -73,14 +73,28 @@ infrastructure-as-code/
 
 ### 1회 셋업
 
+AWS 계정 ID 는 git tracked 파일에 박지 않고 로컬 tfvars / backend-config 로 주입한다.
+
 ```bash
+# 0) AWS 계정 ID 확인
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
 # 1) Terraform state 백엔드 (S3 + DynamoDB)
 cd bootstrap
-terraform init && terraform apply
+cp terraform.tfvars.example terraform.tfvars
+sed -i '' "s|<AWS_ACCOUNT_ID>|$ACCOUNT_ID|" terraform.tfvars  # 또는 직접 편집
+terraform init
+terraform apply
+# 출력:
+#   state_bucket = "tick-tfstate-<ACCOUNT_ID>"
+#   lock_table   = "tick-tflock"
 
-# 2) dev 환경 리소스
+# 2) dev 환경 리소스 — partial backend config 로 init
 cd ../terraform/envs/dev
-terraform init && terraform apply
+cp backend-config.hcl.example backend-config.hcl
+sed -i '' "s|<AWS_ACCOUNT_ID>|$ACCOUNT_ID|" backend-config.hcl
+terraform init -backend-config=backend-config.hcl
+terraform apply
 # 출력:
 #   app_public_ip          = "x.x.x.x"
 #   app_instance_id        = "i-xxxxxxxxx"
@@ -88,6 +102,20 @@ terraform init && terraform apply
 #   ssm_session_command    = "aws ssm start-session --target i-xxx ..."
 #   ecr_backend_url        = "...dkr.ecr.../tick-dev-backend"
 #   ecr_frontend_url       = "...dkr.ecr.../tick-dev-frontend"
+```
+
+`terraform.tfvars` 와 `backend-config.hcl` 은 `.gitignore` 로 막혀 있어 실수로 커밋되지 않음.
+
+### 이미 init 된 환경에서 partial config 로 전환
+
+기존에 `bucket = "..."` 가 backend.tf 에 박혀 있던 상태로 init 된 환경이라면 한 번만 reconfigure:
+
+```bash
+cd terraform/envs/dev
+cp backend-config.hcl.example backend-config.hcl
+# 값 채움
+terraform init -reconfigure -backend-config=backend-config.hcl
+# state 위치는 동일 (같은 S3 bucket / key) 이라 마이그레이션 없음
 ```
 
 ### GitHub Secrets 등록

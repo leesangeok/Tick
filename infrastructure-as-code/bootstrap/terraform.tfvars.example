@@ -1,0 +1,13 @@
+# 이 파일을 terraform.tfvars 로 복사한 뒤 실제 값을 채우고 사용한다.
+# terraform.tfvars 자체는 .gitignore (*.tfvars) 로 git tracking 에서 제외됨.
+#
+# 사용:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # 아래 값을 본인 AWS 계정 ID 로 수정
+#   terraform init
+#   terraform apply
+#
+# AWS 계정 ID 확인:
+#   aws sts get-caller-identity --query Account --output text
+
+account_id = "<AWS_ACCOUNT_ID>"
