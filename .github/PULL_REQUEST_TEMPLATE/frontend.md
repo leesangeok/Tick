@@ -4,6 +4,14 @@ about: 프론트엔드 변경
 labels: frontend
 ---
 
+## 브랜치 네이밍 규칙
+
+`<area>/<type>/<kebab-case-description>` 형태.
+
+- area: `frontend` (이 PR), `backend`, `infra`
+- type: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `perf`
+- 예: `frontend/feat/order-flow-e2e`, `frontend/fix/chart-overflow`, `frontend/refactor/portfolio-page`
+
 ## 설명
 
 <!-- 무엇을, 왜 -->

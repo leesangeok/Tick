@@ -145,7 +145,41 @@ gh workflow run CD
 - **로그**: SSM 으로 들어가서 `cd /opt/tick && docker compose logs -f` 확인. CloudWatch 통합은 나중.
 - **재시작**: 인스턴스 재부팅 시 `restart: unless-stopped` 로 docker-compose 가 알아서 재시작.
 - **확장**: 수직 확장 (인스턴스 타입 키움) 만 가능. 사용자 증가 시 RDS 분리 + ALB 도입 검토.
-- **무중단 배포 한계**: 이 구성은 docker compose up -d 시 컨테이너 교체에 몇 초 다운타임 있음. 진짜 무중단은 ECS + ALB 로 가야 함.
+- **무중단 배포**: backend 를 `backend-a` / `backend-b` 두 컨테이너로 띄우고 Caddy 가 round-robin + active health check (`/actuator/health` 5초 주기) + passive failure (1회 실패 시 10초 격리) 로 페일오버. CD 가 한 번에 한 쪽씩 `--force-recreate` + healthy 대기 → 다른 쪽이 트래픽 받음. 단일 EC2 + docker compose 환경에서 가능한 최선. 더 견고한 진짜 무중단 (replica 자동 배치, AZ 분산) 은 ECS + ALB.
+  - **주의 1**: Flyway 스키마 변경은 **backward-compatible 한 변경만** 안전. NOT NULL 컬럼 추가, 컬럼 rename/drop 같은 깨는 변경은 backend-a 가 새 스키마 + backend-b 가 옛 코드로 동시에 동작해서 한쪽이 깨질 수 있음.
+  - **주의 2**: t4g.small 메모리 2 GiB 에서 backend 두 개 (각 `mem_limit: 768m`) + postgres + caddy 가 빠듯하게 들어감. OOM 보이면 `mem_limit` 낮추거나 인스턴스 타입 키움.
+
+## 무중단 구조 적용 (기존 EC2 가 있을 때)
+
+terraform 의 `user_data_replace_on_change = false` 라서 `user_data.sh` 만 수정해도 기존 인스턴스는 안 갈림. 둘 중 하나:
+
+### A. SSM 으로 들어가서 수동 적용 (다운타임 ~30초)
+
+```bash
+aws ssm start-session --target <instance-id> --region ap-northeast-2
+
+# EC2 안에서
+sudo vi /opt/tick/caddy/Caddyfile           # user_data.sh 의 CADDY heredoc 내용으로 교체
+sudo vi /opt/tick/compose.prod.yaml         # user_data.sh 의 COMPOSE heredoc 내용으로 교체
+                                            # (단, ${backend_image} / ${frontend_image} 는 ECR repo URL 로 치환)
+
+# 새 컨테이너 띄우고 옛 backend 제거
+docker compose -f /opt/tick/compose.prod.yaml --env-file /opt/tick/.env up -d --remove-orphans
+docker container rm -f tick-backend 2>/dev/null || true   # 옛 단일 backend 정리
+```
+
+이후 `main` 브랜치에 push 하면 CD 가 rolling 으로 무중단 배포.
+
+### B. 인스턴스 재생성 (한 번 다운타임 ~2분, 그 후 영구 무중단)
+
+```bash
+cd infrastructure-as-code/terraform/envs/dev
+terraform taint aws_instance.app
+terraform apply
+# 새 인스턴스가 새 user_data.sh 로 부팅 → EIP 그대로 attach
+# 새 EIP/IP 가 카카오 콘솔에 등록된 redirect URI 와 동일한지 확인
+# .env 시크릿 한 번 다시 채워야 함 (SSM 으로)
+```
 
 ## 정리 (destroy)
 

@@ -4,6 +4,14 @@ about: 인프라 / IaC / CI / CD 변경
 labels: infrastructure
 ---
 
+## 브랜치 네이밍 규칙
+
+`<area>/<type>/<kebab-case-description>` 형태.
+
+- area: `infra` (이 PR), `backend`, `frontend`
+- type: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `perf`
+- 예: `infra/feat/zero-downtime-deploy`, `infra/fix/caddy-health-check`, `infra/chore/upgrade-terraform`
+
 ## 설명
 
 <!-- 무엇을, 왜 -->

@@ -21,20 +21,37 @@ chown -R ec2-user:ec2-user /opt/tick
 cat > /opt/tick/caddy/Caddyfile <<'CADDY'
 # 도메인 붙이기 전: HTTP. 도메인 + Route53 A 레코드 붙이면 :80 을 도메인명으로 바꾸면
 # Caddy 가 자동으로 Let's Encrypt cert 발급 + HTTPS 강제.
+#
+# 무중단 배포: backend-a / backend-b 두 컨테이너를 round-robin 으로 라우팅.
+# active health check (5초 주기) + passive failure (1회 실패 시 10초 격리) 로
+# 배포 중 한 쪽이 죽어도 다른 쪽으로 즉시 페일오버.
+(backend_upstream) {
+    reverse_proxy backend-a:8080 backend-b:8080 {
+        lb_policy round_robin
+        health_uri /actuator/health
+        health_interval 5s
+        health_timeout 3s
+        health_status 2xx
+        fail_duration 10s
+        max_fails 1
+        unhealthy_status 5xx
+    }
+}
+
 :80 {
     encode gzip
 
     handle /api/* {
-        reverse_proxy backend:8080
+        import backend_upstream
     }
     handle /oauth2/* {
-        reverse_proxy backend:8080
+        import backend_upstream
     }
     handle /login/* {
-        reverse_proxy backend:8080
+        import backend_upstream
     }
     handle /actuator/health {
-        reverse_proxy backend:8080
+        import backend_upstream
     }
     handle {
         reverse_proxy frontend:3000
@@ -43,6 +60,30 @@ cat > /opt/tick/caddy/Caddyfile <<'CADDY'
 CADDY
 
 cat > /opt/tick/compose.prod.yaml <<COMPOSE
+# backend 는 a/b 두 컨테이너로 띄워서 Caddy 가 round-robin + active health check.
+# CD 가 한 번에 한 쪽씩 force-recreate 하면 다른 쪽이 트래픽 받아서 무중단.
+# Flyway 마이그레이션은 동시 부팅해도 lock 으로 serialise 되니 안전.
+# 단, 스키마 변경은 backward-compatible 한 변경만 (NOT NULL 추가 X).
+
+x-backend: &backend
+  image: ${backend_image}:latest
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+  mem_limit: 768m
+  environment:
+    SPRING_PROFILES_ACTIVE: prod
+    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tick
+    SPRING_DATASOURCE_USERNAME: tick
+    SPRING_DATASOURCE_PASSWORD: \$${POSTGRES_PASSWORD}
+    SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID: \$${KAKAO_CLIENT_ID}
+    SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_SECRET: \$${KAKAO_CLIENT_SECRET}
+    TICK_JWT_SECRET: \$${TICK_JWT_SECRET}
+    TICK_CORS_ALLOWED_ORIGINS: \$${TICK_PUBLIC_URL}
+    TICK_AUTH_FRONTEND_CALLBACK_URL: \$${TICK_PUBLIC_URL}/auth/callback
+    TICK_AUTH_FRONTEND_LOGIN_URL: \$${TICK_PUBLIC_URL}/login
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -60,23 +101,13 @@ services:
       timeout: 5s
       retries: 10
 
-  backend:
-    image: ${backend_image}:latest
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tick
-      SPRING_DATASOURCE_USERNAME: tick
-      SPRING_DATASOURCE_PASSWORD: \$${POSTGRES_PASSWORD}
-      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID: \$${KAKAO_CLIENT_ID}
-      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_SECRET: \$${KAKAO_CLIENT_SECRET}
-      TICK_JWT_SECRET: \$${TICK_JWT_SECRET}
-      TICK_CORS_ALLOWED_ORIGINS: \$${TICK_PUBLIC_URL}
-      TICK_AUTH_FRONTEND_CALLBACK_URL: \$${TICK_PUBLIC_URL}/auth/callback
-      TICK_AUTH_FRONTEND_LOGIN_URL: \$${TICK_PUBLIC_URL}/login
+  backend-a:
+    <<: *backend
+    container_name: tick-backend-a
+
+  backend-b:
+    <<: *backend
+    container_name: tick-backend-b
 
   frontend:
     image: ${frontend_image}:latest
@@ -96,7 +127,8 @@ services:
       - caddy_config:/config
     depends_on:
       - frontend
-      - backend
+      - backend-a
+      - backend-b
 
 volumes:
   pgdata:
