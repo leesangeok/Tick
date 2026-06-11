@@ -4,6 +4,14 @@ about: 백엔드 변경
 labels: backend
 ---
 
+## 브랜치 네이밍 규칙
+
+`<area>/<type>/<kebab-case-description>` 형태.
+
+- area: `backend` (이 PR), `frontend`, `infra`
+- type: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `perf`
+- 예: `backend/feat/hexagonal-refactor`, `backend/fix/jwt-expiry`, `backend/refactor/order-domain`
+
 ## 설명
 
 <!-- 무엇을, 왜 -->
