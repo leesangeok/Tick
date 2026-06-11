@@ -17,3 +17,23 @@ export type Order = {
   averageCostAt?: number;
   realizedProfitLoss?: number;
 };
+
+export type CreateOrderRequest = {
+  stockCode: string;
+  quantity: number;
+  orderType: OrderType;
+};
+
+export type CreateOrderResponse = {
+  orderId: string;
+  symbol: string;
+  stockName: string;
+  side: OrderSide;
+  orderType: OrderType;
+  quantity: number;
+  price: number;
+  totalAmount: number;
+  realizedProfitLoss: number | null;
+  status: OrderStatus;
+  filledAt: string | null;
+};
