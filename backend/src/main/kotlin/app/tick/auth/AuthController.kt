@@ -1,8 +1,10 @@
 package app.tick.auth
 
+import app.tick.common.exception.BusinessException
+import app.tick.common.exception.ErrorCode
+import app.tick.common.response.ApiResponse
 import app.tick.member.MemberRepository
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -16,24 +18,25 @@ data class MeResponse(
 )
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 class AuthController(
     private val memberRepository: MemberRepository,
     private val jwtCookies: JwtCookies,
 ) {
     @GetMapping("/me")
-    fun me(@AuthenticationPrincipal principal: AuthPrincipal?): ResponseEntity<MeResponse> {
-        if (principal == null) return ResponseEntity.status(401).build()
-        val member = memberRepository.findById(principal.memberId).orElse(null)
-            ?: return ResponseEntity.status(401).build()
-        return ResponseEntity.ok(
+    fun me(@AuthenticationPrincipal principal: AuthPrincipal?): ApiResponse<MeResponse> {
+        if (principal == null) throw BusinessException(ErrorCode.UNAUTHORIZED)
+        val member = memberRepository.findById(principal.memberId).orElseThrow {
+            BusinessException(ErrorCode.UNAUTHORIZED)
+        }
+        return ApiResponse.success(
             MeResponse(id = member.id, nickname = member.nickname, email = member.email),
         )
     }
 
     @PostMapping("/logout")
-    fun logout(response: HttpServletResponse): ResponseEntity<Void> {
+    fun logout(response: HttpServletResponse): ApiResponse<Unit> {
         jwtCookies.clear(response)
-        return ResponseEntity.noContent().build()
+        return ApiResponse.success()
     }
 }

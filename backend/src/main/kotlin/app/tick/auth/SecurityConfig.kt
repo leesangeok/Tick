@@ -34,9 +34,9 @@ class SecurityConfig(
                         "/actuator/info",
                         "/login/**",
                         "/oauth2/**",
-                        "/api/auth/**",
-                        "/api/stocks",
-                        "/api/stocks/**",
+                        "/api/v1/auth/**",
+                        "/api/v1/stocks",
+                        "/api/v1/stocks/**",
                     ).permitAll()
                     .anyRequest().authenticated()
             }
