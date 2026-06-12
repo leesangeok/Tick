@@ -95,6 +95,8 @@ resource "aws_instance" "app" {
   user_data = templatefile("${path.module}/user_data.sh", {
     backend_image  = aws_ecr_repository.backend.repository_url
     frontend_image = aws_ecr_repository.frontend.repository_url
+    backup_bucket  = aws_s3_bucket.backup.bucket
+    aws_region     = var.region
   })
 
   user_data_replace_on_change = false

@@ -148,6 +148,53 @@ ENVFILE
 chmod 600 /opt/tick/.env
 fi
 
+# ===== Postgres daily backup → S3 =====
+mkdir -p /opt/tick/scripts /var/log/tick
+cat > /opt/tick/scripts/pg-backup.sh <<BACKUP
+#!/bin/bash
+set -euo pipefail
+
+BACKUP_BUCKET="${backup_bucket}"
+AWS_REGION="${aws_region}"
+TS=\$(date -u +%Y%m%dT%H%M%SZ)
+TARGET=/tmp/tick-pgdump-\$TS.sql.gz
+LOG=/var/log/tick/pg-backup.log
+
+cd /opt/tick
+
+if ! docker compose -f compose.prod.yaml --env-file .env exec -T postgres \
+    pg_dump -U tick -d tick --no-owner --clean --if-exists \
+  | gzip > "\$TARGET"; then
+  echo "[\$TS] pg_dump 실패" | tee -a "\$LOG" >&2
+  exit 1
+fi
+
+# 빈 dump 방지 (gzip 헤더 + 본문이 거의 100 bytes 미만이면 의심)
+if [ "\$(wc -c < "\$TARGET")" -lt 100 ]; then
+  echo "[\$TS] dump 크기가 비정상 (< 100 bytes)" | tee -a "\$LOG" >&2
+  rm -f "\$TARGET"
+  exit 1
+fi
+
+aws s3 cp "\$TARGET" "s3://\$BACKUP_BUCKET/postgres/tick-\$TS.sql.gz" \
+    --region "\$AWS_REGION" --no-progress \
+  | tee -a "\$LOG"
+
+rm -f "\$TARGET"
+echo "[\$TS] backup OK" | tee -a "\$LOG"
+BACKUP
+chmod +x /opt/tick/scripts/pg-backup.sh
+
+# 매일 03:30 KST = 18:30 UTC. cron 은 UTC 로 해석되므로 18:30 사용.
+cat > /etc/cron.d/tick-pgbackup <<'CRON'
+30 18 * * * root /opt/tick/scripts/pg-backup.sh >> /var/log/tick/pg-backup.log 2>&1
+CRON
+chmod 644 /etc/cron.d/tick-pgbackup
+
+# AL2023 는 cronie 가 기본 없음 → 설치 + 시작
+dnf install -y cronie
+systemctl enable --now crond
+
 chown -R ec2-user:ec2-user /opt/tick
 
 # 첫 부팅 시점엔 이미지가 ECR 에 없을 수 있어서 compose up 은 안 함.
