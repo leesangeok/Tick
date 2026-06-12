@@ -1,4 +1,4 @@
-import { apiFetch } from "./apiFetch";
+import { ApiError, apiFetch, unwrapApi } from "./apiFetch";
 
 export type AccountResponse = {
   id: number;
@@ -14,14 +14,16 @@ export type MeResponse = {
 };
 
 export async function fetchAccount(): Promise<AccountResponse> {
-  const res = await apiFetch("/api/account");
-  if (!res.ok) throw new Error(`Failed to fetch account: ${res.status}`);
-  return res.json();
+  const res = await apiFetch("/api/v1/account");
+  return unwrapApi<AccountResponse>(res);
 }
 
 export async function fetchMe(): Promise<MeResponse | null> {
-  const res = await apiFetch("/api/auth/me");
-  if (res.status === 401) return null;
-  if (!res.ok) throw new Error(`Failed to fetch me: ${res.status}`);
-  return res.json();
+  const res = await apiFetch("/api/v1/auth/me");
+  try {
+    return await unwrapApi<MeResponse>(res);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) return null;
+    throw err;
+  }
 }
