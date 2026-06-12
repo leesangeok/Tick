@@ -181,19 +181,41 @@ gh workflow run CD
 
 terraform 의 `user_data_replace_on_change = false` 라서 `user_data.sh` 만 수정해도 기존 인스턴스는 안 갈림. 둘 중 하나:
 
-### A. SSM 으로 들어가서 수동 적용 (다운타임 ~30초)
+### A. SSM 으로 들어가서 수동 적용 (다운타임 ~수 초)
+
+> ⚠️ **bind mount inode 함정 — 반드시 읽기**
+>
+> docker bind mount (`./caddy/Caddyfile:/etc/caddy/Caddyfile:ro` 같은 host 경로 마운트) 는 컨테이너 부팅 시 호스트 파일의 **inode** 를 잡는다. **inode 가 바뀌는 패턴** 으로 파일을 갱신하면 컨테이너 안의 마운트는 옛 inode 를 계속 가리켜서 새 내용을 못 본다 — Caddy 는 `config is unchanged` 로 응답하고 reload 가 no-op 가 된다.
+>
+> | 함정 (inode 변경) | 안전 (inode 보존) |
+> |---|---|
+> | `mv new old` | `cat new > old` |
+> | `vim :w` (`backupcopy=no` 기본) | `tee old < new` |
+> | `cp -f new old` 의 일부 환경 | `install -m 644 new old` (POSIX) |
+> | 편집기의 atomic write (`tempfile + rename`) | 편집기에서 `set backupcopy=yes` 후 저장 |
+>
+> 함정에 빠진 뒤엔 `docker compose restart caddy` 로 mount 가 새 inode 를 잡게 강제할 수 있다.
 
 ```bash
 aws ssm start-session --target <instance-id> --region ap-northeast-2
 
-# EC2 안에서
-sudo vi /opt/tick/caddy/Caddyfile           # user_data.sh 의 CADDY heredoc 내용으로 교체
-sudo vi /opt/tick/compose.prod.yaml         # user_data.sh 의 COMPOSE heredoc 내용으로 교체
-                                            # (단, ${backend_image} / ${frontend_image} 는 ECR repo URL 로 치환)
+# EC2 안에서 — vi/mv 금지. cat heredoc 으로 in-place 덮어쓰기.
+sudo tee /opt/tick/caddy/Caddyfile > /dev/null <<'EOF'
+... 새 Caddyfile 내용 (user_data.sh 의 Caddyfile heredoc 참고) ...
+EOF
 
-# 새 컨테이너 띄우고 옛 backend 제거
-docker compose -f /opt/tick/compose.prod.yaml --env-file /opt/tick/.env up -d --remove-orphans
-docker container rm -f tick-backend 2>/dev/null || true   # 옛 단일 backend 정리
+sudo tee /opt/tick/compose.prod.yaml > /dev/null <<'EOF'
+... 새 compose 내용 (${backend_image} / ${frontend_image} 는 ECR repo URL 로 치환) ...
+EOF
+
+# caddy 의 admin reload 는 'config is unchanged' 라고 거짓 보고할 수 있다 (mount 가 옛 inode 잡고 있을 때).
+# 안전하게 caddy 재시작으로 mount 갱신을 강제한다.
+docker compose -f /opt/tick/compose.prod.yaml --env-file /opt/tick/.env restart caddy
+
+# 새 backend-a / backend-b 띄우고 옛 단일 backend 제거
+docker compose -f /opt/tick/compose.prod.yaml --env-file /opt/tick/.env up -d --no-deps backend-a backend-b
+# (healthy 대기 후)
+docker container rm -f tick-backend-1 2>/dev/null || true
 ```
 
 이후 `main` 브랜치에 push 하면 CD 가 rolling 으로 무중단 배포.
