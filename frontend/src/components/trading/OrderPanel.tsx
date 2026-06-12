@@ -8,6 +8,7 @@ import {
   createSellOrder,
   OrderApiError,
 } from "@/services/orderClient";
+import { useOrderStore } from "@/stores/useOrderStore";
 import {
   formatCurrency,
   formatKoreanUnit,
@@ -23,8 +24,6 @@ type Props = {
   availableCash: number;
 };
 
-type Side = "BUY" | "SELL";
-
 export function OrderPanel({
   stockCode,
   stockName,
@@ -32,7 +31,8 @@ export function OrderPanel({
   availableCash,
 }: Props) {
   const router = useRouter();
-  const [side, setSide] = useState<Side>("BUY");
+  const side = useOrderStore((s) => s.side);
+  const setSide = useOrderStore((s) => s.setSide);
   const [orderType, setOrderType] = useState<OrderType>("MARKET");
   const [quantity, setQuantity] = useState<string>("");
   const [confirming, setConfirming] = useState(false);

@@ -5,6 +5,7 @@ import { fetchAccount } from "@/services/accountService";
 import { mockNews } from "@/mocks/news";
 import { mockAiReports } from "@/mocks/aiReports";
 import { OrderPanel } from "@/components/trading/OrderPanel";
+import { StockChart } from "@/components/stocks/StockChart";
 import {
   formatCurrency,
   formatRelativeTime,
@@ -32,9 +33,8 @@ export default async function StockDetailPage({ params }: PageProps) {
     (r) => r.symbol === symbol && r.type !== "DAILY_SUMMARY",
   );
 
-  const min = Math.min(...series.map((p) => p.low));
-  const max = Math.max(...series.map((p) => p.high));
-  const range = max - min || 1;
+  const min = series.length > 0 ? Math.min(...series.map((p) => p.low)) : 0;
+  const max = series.length > 0 ? Math.max(...series.map((p) => p.high)) : 0;
 
   return (
     <div className="space-y-6">
@@ -84,26 +84,11 @@ export default async function StockDetailPage({ params }: PageProps) {
                 고가 {formatCurrency(max)} · 저가 {formatCurrency(min)}
               </span>
             </div>
-            <svg
-              viewBox="0 0 600 200"
-              className="h-44 w-full"
-              preserveAspectRatio="none"
-              role="img"
-              aria-label={`${stock.name} 60일 가격 추이`}
-            >
-              <polyline
-                fill="none"
-                stroke={stock.changeAmount >= 0 ? "hsl(var(--gain))" : "hsl(var(--loss))"}
-                strokeWidth="2"
-                points={series
-                  .map((p, i) => {
-                    const x = (i / (series.length - 1)) * 600;
-                    const y = 200 - ((p.close - min) / range) * 180 - 10;
-                    return `${x},${y}`;
-                  })
-                  .join(" ")}
-              />
-            </svg>
+            <StockChart
+              series={series}
+              changeAmount={stock.changeAmount}
+              ariaLabel={`${stock.name} 60일 가격 추이`}
+            />
           </div>
 
           {aiReport && (

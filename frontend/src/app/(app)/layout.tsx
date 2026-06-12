@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { TopNavigation } from "@/components/layout/TopNavigation";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
+import { GlobalHotkeys } from "@/components/layout/GlobalHotkeys";
 
 export default function AppLayout({
   children,
@@ -17,6 +18,7 @@ export default function AppLayout({
         </main>
         <MobileNavigation />
       </div>
+      <GlobalHotkeys />
     </div>
   );
 }
