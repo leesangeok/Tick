@@ -5,6 +5,7 @@ import app.tick.common.domain.Quantity
 import app.tick.common.domain.StockCode
 import app.tick.common.exception.InvalidOrderQuantityException
 import app.tick.common.exception.InvalidOrderTypeException
+import app.tick.common.response.ApiResponse
 import app.tick.order.application.CreateBuyOrderCommand
 import app.tick.order.application.CreateOrderUseCase
 import app.tick.order.application.CreateSellOrderCommand
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/api/v1/orders")
 class OrderController(
     private val createOrder: CreateOrderUseCase,
     private val getOrders: GetOrdersUseCase,
@@ -27,19 +28,19 @@ class OrderController(
     fun buy(
         @AuthenticationPrincipal principal: AuthPrincipal,
         @RequestBody request: CreateOrderRequest,
-    ): CreateOrderResponse =
-        createOrder.buy(request.toBuyCommand(principal.memberId)).toResponse()
+    ): ApiResponse<CreateOrderResponse> =
+        ApiResponse.success(createOrder.buy(request.toBuyCommand(principal.memberId)).toResponse())
 
     @PostMapping("/sell")
     fun sell(
         @AuthenticationPrincipal principal: AuthPrincipal,
         @RequestBody request: CreateOrderRequest,
-    ): CreateOrderResponse =
-        createOrder.sell(request.toSellCommand(principal.memberId)).toResponse()
+    ): ApiResponse<CreateOrderResponse> =
+        ApiResponse.success(createOrder.sell(request.toSellCommand(principal.memberId)).toResponse())
 
     @GetMapping
-    fun list(@AuthenticationPrincipal principal: AuthPrincipal): List<OrderResponse> =
-        getOrders.list(principal.memberId).map { it.toResponse() }
+    fun list(@AuthenticationPrincipal principal: AuthPrincipal): ApiResponse<List<OrderResponse>> =
+        ApiResponse.success(getOrders.list(principal.memberId).map { it.toResponse() })
 }
 
 private fun CreateOrderRequest.toBuyCommand(memberId: Long): CreateBuyOrderCommand =
