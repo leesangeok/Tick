@@ -169,7 +169,11 @@ gh workflow run CD
 ## 운영 메모
 
 - **데이터**: Postgres 데이터는 EC2 EBS volume 의 docker volume (`pgdata`) 에 저장.
-- **백업**: 일정 시점에 `pg_dump` → S3 업로드 cron 추가 가능 (지금은 없음).
+- **백업**: 매일 03:30 KST (18:30 UTC) 에 EC2 cron 이 `pg_dump | gzip` 후 S3 (`tick-dev-pgbackup-<account-id>`) 의 `postgres/tick-<ts>.sql.gz` 로 업로드.
+  - 30일 후 S3 STANDARD_IA 로 자동 전환, 90일 후 만료. versioning 활성.
+  - 로그: `/var/log/tick/pg-backup.log` (SSM 으로 들어가서 `tail -f`)
+  - 수동 실행: `sudo /opt/tick/scripts/pg-backup.sh`
+  - 복원: 로컬에서 `aws s3 cp s3://tick-dev-pgbackup-.../postgres/tick-<ts>.sql.gz - | gunzip | psql -h ... -U tick -d tick`
 - **로그**: SSM 으로 들어가서 `cd /opt/tick && docker compose logs -f` 확인. CloudWatch 통합은 나중.
 - **재시작**: 인스턴스 재부팅 시 `restart: unless-stopped` 로 docker-compose 가 알아서 재시작.
 - **확장**: 수직 확장 (인스턴스 타입 키움) 만 가능. 사용자 증가 시 RDS 분리 + ALB 도입 검토.
