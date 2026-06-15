@@ -18,6 +18,7 @@ class SecurityConfig(
     private val kakaoOAuth2UserService: KakaoOAuth2UserService,
     private val oauth2SuccessHandler: OAuth2SuccessHandler,
     private val oauth2FailureHandler: OAuth2FailureHandler,
+    private val authorizationRequestRepository: HttpCookieOAuth2AuthorizationRequestRepository,
 ) {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
@@ -42,6 +43,9 @@ class SecurityConfig(
             }
             .oauth2Login { oauth ->
                 oauth
+                    .authorizationEndpoint {
+                        it.authorizationRequestRepository(authorizationRequestRepository)
+                    }
                     .userInfoEndpoint { it.userService(kakaoOAuth2UserService) }
                     .successHandler(oauth2SuccessHandler)
                     .failureHandler(oauth2FailureHandler)
