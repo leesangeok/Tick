@@ -64,3 +64,4 @@ tick:
     frontend-login-url: ${TICK_FRONTEND_LOGIN_URL:http://localhost:3000/login}
     cookie-same-site: ${TICK_AUTH_COOKIE_SAME_SITE:Lax}
     cookie-secure: ${TICK_AUTH_COOKIE_SECURE:false}
+    cookie-domain: ${TICK_AUTH_COOKIE_DOMAIN:}

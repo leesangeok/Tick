@@ -25,6 +25,7 @@ class JwtCookies(private val authProperties: AuthProperties) {
             "SameSite=${authProperties.cookieSameSite}",
         )
         if (authProperties.cookieSecure) parts += "Secure"
+        authProperties.cookieDomain?.takeIf { it.isNotBlank() }?.let { parts += "Domain=$it" }
         return parts.joinToString("; ")
     }
 
