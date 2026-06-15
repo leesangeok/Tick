@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, Star } from "lucide-react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { toast } from "sonner";
 import type { Stock } from "@/types/stock";
 import { useWatchlistStore } from "@/stores/useWatchlistStore";
 import {
@@ -36,6 +37,11 @@ export function StockTable({ stocks }: Props) {
   const [query, setQuery] = useState("");
   const watchlist = useWatchlistStore((s) => s.symbols);
   const toggleWatch = useWatchlistStore((s) => s.toggle);
+  const hydrate = useWatchlistStore((s) => s.hydrate);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   useHotkeys("/", (e) => {
     e.preventDefault();
@@ -162,7 +168,11 @@ export function StockTable({ stocks }: Props) {
                     <td className="px-2 py-3 text-center">
                       <button
                         type="button"
-                        onClick={() => toggleWatch(s.symbol)}
+                        onClick={() => {
+                          toggleWatch(s.symbol).catch(() => {
+                            toast.error("로그인 후 이용할 수 있어요.");
+                          });
+                        }}
                         aria-label={isFav ? "관심 종목 해제" : "관심 종목 추가"}
                         aria-pressed={isFav}
                         className="rounded p-1 hover:bg-accent"
