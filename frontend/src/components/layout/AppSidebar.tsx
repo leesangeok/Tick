@@ -31,7 +31,7 @@ export function AppSidebar() {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    fetch(`${API_URL}/api/auth/me`, { credentials: "include", cache: "no-store" })
+    fetch(`${API_URL}/api/v1/auth/me`, { credentials: "include", cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then(setMe)
       .catch(() => setMe(null));
