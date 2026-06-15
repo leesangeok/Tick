@@ -15,3 +15,9 @@ variable "environment" {
   description = "Environment name"
   default     = "dev"
 }
+
+variable "root_domain" {
+  type        = string
+  description = "Root domain. 파생: api.<root_domain> = backend, <root_domain> = frontend, .<root_domain> = cookie domain"
+  default     = "tickk.dev"
+}
