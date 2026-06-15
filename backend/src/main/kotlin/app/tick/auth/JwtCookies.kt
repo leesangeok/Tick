@@ -5,20 +5,26 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Component
 
 const val ACCESS_TOKEN_COOKIE = "tick_at"
+const val REFRESH_TOKEN_COOKIE = "tick_rt"
 
 @Component
 class JwtCookies(private val authProperties: AuthProperties) {
-    fun write(response: HttpServletResponse, token: String, maxAgeSec: Int) {
-        response.addHeader("Set-Cookie", buildCookie(token, maxAgeSec))
+    fun writeAccess(response: HttpServletResponse, token: String, maxAgeSec: Int) {
+        response.addHeader("Set-Cookie", buildCookie(ACCESS_TOKEN_COOKIE, token, maxAgeSec))
+    }
+
+    fun writeRefresh(response: HttpServletResponse, token: String, maxAgeSec: Int) {
+        response.addHeader("Set-Cookie", buildCookie(REFRESH_TOKEN_COOKIE, token, maxAgeSec))
     }
 
     fun clear(response: HttpServletResponse) {
-        response.addHeader("Set-Cookie", buildCookie("", 0))
+        response.addHeader("Set-Cookie", buildCookie(ACCESS_TOKEN_COOKIE, "", 0))
+        response.addHeader("Set-Cookie", buildCookie(REFRESH_TOKEN_COOKIE, "", 0))
     }
 
-    private fun buildCookie(value: String, maxAgeSec: Int): String {
+    private fun buildCookie(name: String, value: String, maxAgeSec: Int): String {
         val parts = mutableListOf(
-            "$ACCESS_TOKEN_COOKIE=$value",
+            "$name=$value",
             "HttpOnly",
             "Path=/",
             "Max-Age=$maxAgeSec",
@@ -30,7 +36,10 @@ class JwtCookies(private val authProperties: AuthProperties) {
     }
 
     companion object {
-        fun read(request: HttpServletRequest): String? =
+        fun readAccess(request: HttpServletRequest): String? =
             request.cookies?.firstOrNull { it.name == ACCESS_TOKEN_COOKIE }?.value
+
+        fun readRefresh(request: HttpServletRequest): String? =
+            request.cookies?.firstOrNull { it.name == REFRESH_TOKEN_COOKIE }?.value
     }
 }
