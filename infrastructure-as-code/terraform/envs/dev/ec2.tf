@@ -93,10 +93,14 @@ resource "aws_instance" "app" {
   }
 
   user_data = templatefile("${path.module}/user_data.sh", {
-    backend_image  = aws_ecr_repository.backend.repository_url
-    frontend_image = aws_ecr_repository.frontend.repository_url
-    backup_bucket  = aws_s3_bucket.backup.bucket
-    aws_region     = var.region
+    backend_image = aws_ecr_repository.backend.repository_url
+    backup_bucket = aws_s3_bucket.backup.bucket
+    aws_region    = var.region
+    caddy_host    = "api.${var.root_domain}"
+    backend_url   = "https://api.${var.root_domain}"
+    frontend_url  = "https://${var.root_domain}"
+    cors_origins  = "https://${var.root_domain}"
+    cookie_domain = ".${var.root_domain}"
   })
 
   user_data_replace_on_change = false
@@ -115,7 +119,7 @@ resource "aws_eip" "app" {
 
 output "app_public_ip" {
   value       = aws_eip.app.public_ip
-  description = "EC2 public IP. 카카오 콘솔의 Redirect URI 에 http://<this>/login/oauth2/code/kakao 등록."
+  description = "EC2 public IP. Route53 / Cloudflare 의 api.<root_domain> A 레코드를 이 IP 로 설정."
 }
 
 output "app_instance_id" {
