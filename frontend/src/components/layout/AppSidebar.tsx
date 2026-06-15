@@ -33,7 +33,7 @@ export function AppSidebar() {
   useEffect(() => {
     fetch(`${API_URL}/api/v1/auth/me`, { credentials: "include", cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then(setMe)
+      .then((body) => setMe(body?.success ? body.data : null))
       .catch(() => setMe(null));
   }, []);
 
