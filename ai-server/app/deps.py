@@ -6,11 +6,13 @@ from psycopg_pool import AsyncConnectionPool
 
 from app.adapters.embedding.openai_embedding_adapter import OpenAiEmbeddingAdapter
 from app.adapters.llm.anthropic_claude_adapter import AnthropicClaudeAdapter
+from app.adapters.observability.langfuse_trace_adapter import LangfuseTraceAdapter
 from app.adapters.observability.noop_trace_adapter import NoOpTraceAdapter
 from app.adapters.retriever.pgvector_retriever_adapter import PgvectorNewsRetrieverAdapter
 from app.application.use_cases.embed_news import EmbedNewsUseCase
 from app.application.use_cases.summarize_stock import SummarizeStockUseCase
 from app.config.settings import settings
+from app.ports.trace_port import TracePort
 
 
 @lru_cache(maxsize=1)
@@ -36,7 +38,10 @@ def _retriever() -> PgvectorNewsRetrieverAdapter:
 
 
 @lru_cache(maxsize=1)
-def _trace() -> NoOpTraceAdapter:
+def _trace() -> TracePort:
+    # Langfuse 키가 설정돼 있으면 Langfuse, 없으면 NoOp.
+    if settings.langfuse_public_key and settings.langfuse_secret_key:
+        return LangfuseTraceAdapter()
     return NoOpTraceAdapter()
 
 
@@ -63,3 +68,14 @@ async def open_pool() -> None:
 
 async def close_pool() -> None:
     await _pool().close()
+
+
+def flush_langfuse() -> None:
+    """Shutdown 시 큐에 남은 trace 를 flush. CLAUDE.md '스크립트에서 flush() 없으면 trace 안 감' 가드."""
+    if settings.langfuse_public_key and settings.langfuse_secret_key:
+        try:
+            from langfuse import get_client
+
+            get_client().flush()
+        except Exception:
+            pass
