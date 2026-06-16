@@ -52,6 +52,9 @@ management:
         include: health,info
 
 tick:
+  ai-server:
+    url: ${TICK_AI_SERVER_URL:http://ai-server:8000}
+    timeout-sec: 30
   naver:
     news:
       client-id: ${NAVER_CLIENT_ID:}
