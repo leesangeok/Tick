@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.api.routes import embed, health, summary
 from app.config.settings import settings
-from app.deps import close_pool, open_pool
+from app.deps import close_pool, flush_langfuse, open_pool
 
 logging.basicConfig(level=settings.log_level)
 log = logging.getLogger("tick.ai")
@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        flush_langfuse()
         await close_pool()
         log.info("ai-server shutdown complete")
 

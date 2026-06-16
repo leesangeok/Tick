@@ -115,6 +115,9 @@ services:
       POSTGRES_DSN: postgresql://tick:$${POSTGRES_PASSWORD}@postgres:5432/tick
       OPENAI_API_KEY: $${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: $${ANTHROPIC_API_KEY}
+      LANGFUSE_PUBLIC_KEY: $${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: $${LANGFUSE_SECRET_KEY}
+      LANGFUSE_HOST: $${LANGFUSE_HOST}
       LOG_LEVEL: INFO
 
   caddy:
@@ -154,6 +157,9 @@ NAVER_CLIENT_ID=change_me
 NAVER_CLIENT_SECRET=change_me
 OPENAI_API_KEY=change_me
 ANTHROPIC_API_KEY=change_me
+LANGFUSE_PUBLIC_KEY=change_me
+LANGFUSE_SECRET_KEY=change_me
+LANGFUSE_HOST=https://cloud.langfuse.com
 ENVFILE
 chmod 600 /opt/tick/.env
 fi

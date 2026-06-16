@@ -10,6 +10,7 @@ import json
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from app.adapters.observability.langfuse_callback import langfuse_callback_handler
 from app.application.prompts.stock_summary_prompt import SYSTEM_PROMPT, build_user_prompt
 from app.config.settings import settings
 from app.domain.models.ai_summary import AiSummary
@@ -24,6 +25,11 @@ class AnthropicClaudeAdapter:
             api_key=settings.anthropic_api_key,
             max_tokens=settings.anthropic_max_tokens,
         )
+        # Langfuse 자동 trace (model, tokens, prompt, response 다 캡처)
+        self._config = {
+            "callbacks": [langfuse_callback_handler()],
+            "run_name": "stock-summary-generation",
+        }
 
     async def generate_stock_summary(
         self, symbol: StockSymbol, stock_name: str, news: list[RetrievedNews]
@@ -40,7 +46,10 @@ class AnthropicClaudeAdapter:
                 }
             ]
         )
-        response = await self._client.ainvoke([system, HumanMessage(content=user_prompt)])
+        response = await self._client.ainvoke(
+            [system, HumanMessage(content=user_prompt)],
+            config=self._config,
+        )
         text = response.content if isinstance(response.content, str) else self._join_blocks(response.content)
         parsed = self._parse_json(text)
 
