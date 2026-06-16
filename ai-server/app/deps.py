@@ -1,25 +1,65 @@
-"""싱글턴 클라이언트 — 매 요청마다 새로 만들지 않음."""
+"""Dependency wiring — port → adapter."""
 
 from functools import lru_cache
 
-from anthropic import Anthropic
-from openai import OpenAI
-from psycopg_pool import ConnectionPool
+from psycopg_pool import AsyncConnectionPool
 
-from app.config import settings
-
-
-@lru_cache(maxsize=1)
-def openai_client() -> OpenAI:
-    return OpenAI(api_key=settings.openai_api_key)
-
-
-@lru_cache(maxsize=1)
-def anthropic_client() -> Anthropic:
-    return Anthropic(api_key=settings.anthropic_api_key)
+from app.adapters.embedding.openai_embedding_adapter import OpenAiEmbeddingAdapter
+from app.adapters.llm.anthropic_claude_adapter import AnthropicClaudeAdapter
+from app.adapters.observability.noop_trace_adapter import NoOpTraceAdapter
+from app.adapters.retriever.pgvector_retriever_adapter import PgvectorNewsRetrieverAdapter
+from app.application.use_cases.embed_news import EmbedNewsUseCase
+from app.application.use_cases.summarize_stock import SummarizeStockUseCase
+from app.config.settings import settings
 
 
 @lru_cache(maxsize=1)
-def pg_pool() -> ConnectionPool:
-    # min 1 / max 10 — 단일 노드 + 가벼운 트래픽 가정
-    return ConnectionPool(conninfo=settings.postgres_dsn, min_size=1, max_size=10, open=True)
+def _pool() -> AsyncConnectionPool:
+    # open=False → 첫 요청에 lazy open. uvicorn worker fork 안전.
+    pool = AsyncConnectionPool(conninfo=settings.postgres_dsn, min_size=1, max_size=10, open=False)
+    return pool
+
+
+@lru_cache(maxsize=1)
+def _embedding() -> OpenAiEmbeddingAdapter:
+    return OpenAiEmbeddingAdapter()
+
+
+@lru_cache(maxsize=1)
+def _llm() -> AnthropicClaudeAdapter:
+    return AnthropicClaudeAdapter()
+
+
+@lru_cache(maxsize=1)
+def _retriever() -> PgvectorNewsRetrieverAdapter:
+    return PgvectorNewsRetrieverAdapter(pool=_pool())
+
+
+@lru_cache(maxsize=1)
+def _trace() -> NoOpTraceAdapter:
+    return NoOpTraceAdapter()
+
+
+def get_summarize_stock_use_case() -> SummarizeStockUseCase:
+    return SummarizeStockUseCase(
+        embedding=_embedding(),
+        retriever=_retriever(),
+        llm=_llm(),
+        trace=_trace(),
+    )
+
+
+def get_embed_news_use_case() -> EmbedNewsUseCase:
+    return EmbedNewsUseCase(
+        embedding=_embedding(),
+        retriever=_retriever(),
+        trace=_trace(),
+    )
+
+
+async def open_pool() -> None:
+    await _pool().open()
+
+
+async def close_pool() -> None:
+    await _pool().close()
