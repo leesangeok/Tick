@@ -52,6 +52,10 @@ management:
         include: health,info
 
 tick:
+  naver:
+    news:
+      client-id: ${NAVER_CLIENT_ID:}
+      client-secret: ${NAVER_CLIENT_SECRET:}
   cors:
     allowed-origins: http://localhost:3000
   jwt:

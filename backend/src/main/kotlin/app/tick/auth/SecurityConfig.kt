@@ -39,6 +39,7 @@ class SecurityConfig(
                         "/api/v1/stocks",
                         "/api/v1/stocks/**",
                     ).permitAll()
+                    .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/news/**").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2Login { oauth ->
