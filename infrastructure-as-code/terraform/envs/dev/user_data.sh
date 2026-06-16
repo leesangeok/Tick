@@ -72,6 +72,9 @@ x-backend: &backend
     TICK_AUTH_COOKIE_SECURE: "true"
     TICK_AUTH_COOKIE_DOMAIN: $${TICK_AUTH_COOKIE_DOMAIN}
     SERVER_FORWARD_HEADERS_STRATEGY: $${SERVER_FORWARD_HEADERS_STRATEGY}
+    NAVER_CLIENT_ID: $${NAVER_CLIENT_ID}
+    NAVER_CLIENT_SECRET: $${NAVER_CLIENT_SECRET}
+    TICK_AI_SERVER_URL: http://ai-server:8000
 
 services:
   postgres:
@@ -97,6 +100,22 @@ services:
   backend-b:
     <<: *backend
     container_name: tick-backend-b
+
+  # Python FastAPI RAG server. 외부 노출 X (Caddy 라우팅 없음).
+  # backend-a/b 만 docker network 안에서 http://ai-server:8000 으로 호출.
+  ai-server:
+    image: ${ai_server_image}:latest
+    container_name: tick-ai-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: 512m
+    environment:
+      POSTGRES_DSN: postgresql://tick:$${POSTGRES_PASSWORD}@postgres:5432/tick
+      OPENAI_API_KEY: $${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: $${ANTHROPIC_API_KEY}
+      LOG_LEVEL: INFO
 
   caddy:
     image: caddy:2-alpine
@@ -131,6 +150,10 @@ TICK_FRONTEND_URL=${frontend_url}
 TICK_CORS_ALLOWED_ORIGINS=${cors_origins}
 TICK_AUTH_COOKIE_DOMAIN=${cookie_domain}
 SERVER_FORWARD_HEADERS_STRATEGY=native
+NAVER_CLIENT_ID=change_me
+NAVER_CLIENT_SECRET=change_me
+OPENAI_API_KEY=change_me
+ANTHROPIC_API_KEY=change_me
 ENVFILE
 chmod 600 /opt/tick/.env
 fi

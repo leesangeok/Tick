@@ -93,14 +93,15 @@ resource "aws_instance" "app" {
   }
 
   user_data = templatefile("${path.module}/user_data.sh", {
-    backend_image = aws_ecr_repository.backend.repository_url
-    backup_bucket = aws_s3_bucket.backup.bucket
-    aws_region    = var.region
-    caddy_host    = "api.${var.root_domain}"
-    backend_url   = "https://api.${var.root_domain}"
-    frontend_url  = "https://${var.root_domain}"
-    cors_origins  = "https://${var.root_domain}"
-    cookie_domain = ".${var.root_domain}"
+    backend_image   = aws_ecr_repository.backend.repository_url
+    ai_server_image = aws_ecr_repository.ai_server.repository_url
+    backup_bucket   = aws_s3_bucket.backup.bucket
+    aws_region      = var.region
+    caddy_host      = "api.${var.root_domain}"
+    backend_url     = "https://api.${var.root_domain}"
+    frontend_url    = "https://${var.root_domain}"
+    cors_origins    = "https://${var.root_domain}"
+    cookie_domain   = ".${var.root_domain}"
   })
 
   user_data_replace_on_change = false
