@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
+      ai_server: ${{ steps.filter.outputs.ai_server }}
       infra: ${{ steps.filter.outputs.infra }}
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +30,8 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
+            ai_server:
+              - 'ai-server/**'
             infra:
               - 'infrastructure-as-code/**'
 
@@ -68,6 +71,27 @@ jobs:
           SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_SECRET: ci_dummy
       - name: Build docker image
         run: docker build -t tick-backend:ci .
+
+  ai-server:
+    needs: changes
+    if: needs.changes.outputs.ai_server == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install uv
+        run: pip install uv==0.5.4
+      - name: Install deps
+        run: uv pip install --system .
+      - name: Ruff lint
+        run: uv tool run ruff check .
+      - name: Build docker image
+        run: docker build -t tick-ai-server:ci .
 
   infra:
     needs: changes

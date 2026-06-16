@@ -1,12 +1,13 @@
 name: CD
 
-# Frontend 는 Vercel 이 자동 배포함. 이 워크플로우는 backend 만 담당.
+# Frontend 는 Vercel 이 자동 배포. 이 워크플로우는 backend + ai-server.
 
 on:
   push:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'ai-server/**'
       - '.github/workflows/cd.yml'
   workflow_dispatch:
 
@@ -24,10 +25,26 @@ env:
   ENVIRONMENT: dev
 
 jobs:
-  push-backend:
+  changes:
     runs-on: ubuntu-latest
     outputs:
-      pushed: ${{ steps.build.outputs.pushed }}
+      backend: ${{ steps.filter.outputs.backend }}
+      ai_server: ${{ steps.filter.outputs.ai_server }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            ai_server:
+              - 'ai-server/**'
+
+  push-backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
@@ -39,7 +56,6 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - name: Build and push backend (arm64 for t4g EC2)
-        id: build
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
           REPOSITORY: ${{ env.PROJECT }}-${{ env.ENVIRONMENT }}-backend
@@ -51,31 +67,60 @@ jobs:
             -t $REGISTRY/$REPOSITORY:latest \
             --push \
             backend
-          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+  push-ai-server:
+    needs: changes
+    if: needs.changes.outputs.ai_server == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push ai-server (arm64 for t4g EC2)
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPOSITORY: ${{ env.PROJECT }}-${{ env.ENVIRONMENT }}-ai-server
+          TAG: ${{ github.sha }}
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            -t $REGISTRY/$REPOSITORY:$TAG \
+            -t $REGISTRY/$REPOSITORY:latest \
+            --push \
+            ai-server
 
   deploy:
-    needs: push-backend
-    if: needs.push-backend.outputs.pushed == 'true'
+    needs: [changes, push-backend, push-ai-server]
+    # 둘 중 하나라도 push 됐으면 deploy. always() 로 skipped job 도 통과.
+    if: |
+      always() &&
+      (needs.push-backend.result == 'success' || needs.push-ai-server.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: SSM deploy (rolling backend-a → backend-b, zero-downtime)
+      - name: SSM deploy (rolling backend + ai-server)
         env:
           INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+          BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
+          AI_SERVER_CHANGED: ${{ needs.changes.outputs.ai_server }}
         run: |
           set -e
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           REGISTRY=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
           # Rolling deploy:
-          # 1) 새 이미지 pull
-          # 2) backend-a force-recreate → healthy 대기 (최대 ~2분)
-          # 3) backend-b force-recreate → healthy 대기
-          # 4) caddy/frontend 는 변경 없으면 그대로, postgres 도 건드리지 않음
-          # 각 단계마다 Caddy 의 upstream pool 중 다른 한 쪽이 트래픽 받음.
+          # 1) 변경된 서비스 이미지 pull
+          # 2) backend 변경 → backend-a → backend-b 순서 force-recreate (무중단)
+          # 3) ai-server 변경 → force-recreate (내부 호출만 받으니 짧은 다운타임 OK)
           read -r -d '' ROLLING_SCRIPT <<'BASH' || true
           set -e
           cd /opt/tick
@@ -85,36 +130,63 @@ jobs:
 
           docker compose -f compose.prod.yaml --env-file .env pull
 
-          for svc in backend-a backend-b; do
-            echo "::group::rolling $svc"
+          if [ "${BACKEND_CHANGED}" = "true" ]; then
+            for svc in backend-a backend-b; do
+              echo "::group::rolling $svc"
+              docker compose -f compose.prod.yaml --env-file .env up -d \
+                --no-deps --force-recreate "$svc"
+
+              status="starting"
+              for i in $(seq 1 40); do
+                sleep 3
+                status=$(docker inspect \
+                  --format '{{.State.Health.Status}}' "tick-$svc" 2>/dev/null \
+                  || echo missing)
+                echo "[$i] $svc=$status"
+                [ "$status" = "healthy" ] && break
+              done
+
+              if [ "$status" != "healthy" ]; then
+                echo "::error::$svc did not become healthy"
+                docker logs --tail=120 "tick-$svc" || true
+                exit 1
+              fi
+              echo "::endgroup::"
+            done
+          fi
+
+          if [ "${AI_SERVER_CHANGED}" = "true" ]; then
+            echo "::group::ai-server"
             docker compose -f compose.prod.yaml --env-file .env up -d \
-              --no-deps --force-recreate "$svc"
+              --no-deps --force-recreate ai-server
 
             status="starting"
-            for i in $(seq 1 40); do
-              sleep 3
+            for i in $(seq 1 30); do
+              sleep 2
               status=$(docker inspect \
-                --format '{{.State.Health.Status}}' "tick-$svc" 2>/dev/null \
+                --format '{{.State.Health.Status}}' tick-ai-server 2>/dev/null \
                 || echo missing)
-              echo "[$i] $svc=$status"
+              echo "[$i] ai-server=$status"
               [ "$status" = "healthy" ] && break
             done
 
             if [ "$status" != "healthy" ]; then
-              echo "::error::$svc did not become healthy"
-              docker logs --tail=120 "tick-$svc" || true
+              echo "::error::ai-server did not become healthy"
+              docker logs --tail=120 tick-ai-server || true
               exit 1
             fi
             echo "::endgroup::"
-          done
+          fi
 
           docker compose -f compose.prod.yaml --env-file .env up -d \
-            --no-deps frontend caddy || true
+            --no-deps caddy || true
           docker image prune -af --filter until=72h
           BASH
 
           ROLLING_SCRIPT=${ROLLING_SCRIPT//REGION_PLACEHOLDER/$AWS_REGION}
           ROLLING_SCRIPT=${ROLLING_SCRIPT//REGISTRY_PLACEHOLDER/$REGISTRY}
+          ROLLING_SCRIPT=${ROLLING_SCRIPT//\$\{BACKEND_CHANGED\}/$BACKEND_CHANGED}
+          ROLLING_SCRIPT=${ROLLING_SCRIPT//\$\{AI_SERVER_CHANGED\}/$AI_SERVER_CHANGED}
 
           PARAMS=$(jq -n --arg script "$ROLLING_SCRIPT" '{
             commands: [$script]
