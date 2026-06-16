@@ -1,77 +1,28 @@
-"""FastAPI 진입점. Spring backend 가 내부 docker network 로만 호출 (외부 노출 X)."""
-
 import logging
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI
 
-from app.config import settings
-from app.retriever import upsert_missing_embeddings
-from app.summary import generate
+from app.api.routes import embed, health, summary
+from app.config.settings import settings
+from app.deps import close_pool, open_pool
 
 logging.basicConfig(level=settings.log_level)
 log = logging.getLogger("tick.ai")
 
-app = FastAPI(title="Tick AI", version="0.1.0")
 
-
-class SummaryRequest(BaseModel):
-    symbol: str
-    stock_name: str
-
-
-class EvidenceDto(BaseModel):
-    title: str
-    source: str | None
-    source_url: str | None
-    published_at: str
-
-
-class SummaryResponse(BaseModel):
-    summary: str
-    evidences: list[EvidenceDto]
-
-
-class EmbedResponse(BaseModel):
-    upserted: int
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.post("/ai/summary", response_model=SummaryResponse)
-def post_summary(req: SummaryRequest) -> SummaryResponse:
-    if not settings.anthropic_api_key or not settings.openai_api_key:
-        raise HTTPException(status_code=503, detail="ai keys not configured")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await open_pool()
+    log.info("ai-server startup complete")
     try:
-        result = generate(req.symbol, req.stock_name)
-    except Exception as e:
-        log.exception("summary failed symbol=%s", req.symbol)
-        raise HTTPException(status_code=502, detail=f"summary failed: {e}") from e
-    return SummaryResponse(
-        summary=result.summary,
-        evidences=[
-            EvidenceDto(
-                title=e.title,
-                source=e.source,
-                source_url=e.source_url,
-                published_at=e.published_at,
-            )
-            for e in result.evidences
-        ],
-    )
+        yield
+    finally:
+        await close_pool()
+        log.info("ai-server shutdown complete")
 
 
-@app.post("/ai/embeddings/{symbol}", response_model=EmbedResponse)
-def post_embeddings(symbol: str) -> EmbedResponse:
-    """이 종목의 임베딩 안 된 뉴스에 대해 일괄 임베딩 생성 + 저장."""
-    if not settings.openai_api_key:
-        raise HTTPException(status_code=503, detail="openai key not configured")
-    try:
-        upserted = upsert_missing_embeddings(symbol)
-    except Exception as e:
-        log.exception("embed failed symbol=%s", symbol)
-        raise HTTPException(status_code=502, detail=f"embed failed: {e}") from e
-    return EmbedResponse(upserted=upserted)
+app = FastAPI(title="Tick AI", version="0.2.0", lifespan=lifespan)
+app.include_router(health.router)
+app.include_router(summary.router)
+app.include_router(embed.router)
