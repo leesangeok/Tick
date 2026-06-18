@@ -36,11 +36,10 @@ class AiServerAdapter(
         .build()
 
     override fun summarize(stockCode: StockCode, stockName: String): AiSummaryResult {
-        val req = SummaryRequest(symbol = stockCode.value, stock_name = stockName)
         val res = client.post()
             .uri("/ai/summary")
             .contentType(MediaType.APPLICATION_JSON)
-            .body(req)
+            .body(mapOf("symbol" to stockCode.value, "stock_name" to stockName))
             .retrieve()
             .body<SummaryResponse>()
             ?: error("ai-server returned empty body")
@@ -65,9 +64,6 @@ class AiServerAdapter(
             ?: error("ai-server returned empty body")
         return EmbedResult(upserted = res.upserted)
     }
-
-    @Suppress("PropertyName")
-    private data class SummaryRequest(val symbol: String, val stock_name: String)
 
     @Suppress("PropertyName")
     private data class SummaryResponse(
