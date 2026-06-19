@@ -11,9 +11,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
+import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
+import java.net.http.HttpClient
 import java.time.Duration
 
 @ConfigurationProperties(prefix = "tick.ai-server")
@@ -33,6 +35,11 @@ class AiServerAdapter(
     private val log = LoggerFactory.getLogger(javaClass)
     private val client: RestClient = RestClient.builder()
         .baseUrl(properties.url)
+        .requestFactory(
+            // JDK HttpClient 기본값(HTTP/2) → h2c upgrade 시도하면 uvicorn 이 chunked body 를 잃음.
+            // HTTP/1.1 로 고정해 ai-server 가 안정적으로 body 를 받게 한다.
+            JdkClientHttpRequestFactory(HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build())
+        )
         .build()
 
     override fun summarize(stockCode: StockCode, stockName: String): AiSummaryResult {
