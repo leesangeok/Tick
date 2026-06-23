@@ -3,7 +3,7 @@ import { Sparkles, Star } from "lucide-react";
 import { fetchPriceSeries, fetchStock } from "@/services/stockService";
 import { fetchAccount } from "@/services/accountService";
 import { fetchAiSummary } from "@/services/aiSummaryService";
-import { mockNews } from "@/mocks/news";
+import { fetchRecentNews } from "@/services/newsService";
 import { OrderPanel } from "@/components/trading/OrderPanel";
 import { StockChart } from "@/components/stocks/StockChart";
 import {
@@ -22,14 +22,14 @@ type PageProps = {
 
 export default async function StockDetailPage({ params }: PageProps) {
   const { symbol } = await params;
-  const [stock, series, account, aiSummary] = await Promise.all([
+  const [stock, series, account, aiSummary, news] = await Promise.all([
     fetchStock(symbol),
     fetchPriceSeries(symbol, 60).catch(() => []),
     fetchAccount().catch(() => null),
     fetchAiSummary(symbol).catch(() => null),
+    fetchRecentNews(symbol, 10).catch(() => []),
   ]);
   if (!stock) notFound();
-  const news = mockNews.filter((n) => n.symbol === symbol);
 
   const min = series.length > 0 ? Math.min(...series.map((p) => p.low)) : 0;
   const max = series.length > 0 ? Math.max(...series.map((p) => p.high)) : 0;
@@ -176,12 +176,25 @@ export default async function StockDetailPage({ params }: PageProps) {
               <ul className="divide-y divide-border">
                 {news.map((n) => (
                   <li key={n.id} className="px-4 py-3">
-                    <p className="text-sm font-medium">{n.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {n.summary}
-                    </p>
+                    {n.sourceUrl ? (
+                      <a
+                        href={n.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium hover:underline"
+                      >
+                        {n.title}
+                      </a>
+                    ) : (
+                      <p className="text-sm font-medium">{n.title}</p>
+                    )}
+                    {n.body && (
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        {n.body}
+                      </p>
+                    )}
                     <p className="mt-1 text-xs text-muted-foreground/70">
-                      {n.source} · {formatRelativeTime(n.publishedAt)}
+                      {n.source ?? "출처 미상"} · {formatRelativeTime(n.publishedAt)}
                     </p>
                   </li>
                 ))}
