@@ -3,7 +3,7 @@ package app.tick.ai.adapter.external
 import app.tick.ai.application.AiServerPort
 import app.tick.ai.application.AiSummaryResult
 import app.tick.ai.application.EmbedResult
-import app.tick.ai.application.Evidence
+import app.tick.ai.application.SummarySource
 import app.tick.common.domain.StockCode
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.slf4j.LoggerFactory
@@ -51,15 +51,19 @@ class AiServerAdapter(
             .body<SummaryResponse>()
             ?: error("ai-server returned empty body")
         return AiSummaryResult(
+            symbol = res.symbol,
             summary = res.summary,
-            evidences = res.evidences.map {
-                Evidence(
+            keyReasons = res.keyReasons,
+            riskNotes = res.riskNotes,
+            sources = res.sources.map {
+                SummarySource(
                     title = it.title,
                     source = it.source,
-                    sourceUrl = it.source_url,
-                    publishedAt = it.published_at,
+                    sourceUrl = it.sourceUrl,
+                    publishedAt = it.publishedAt,
                 )
             },
+            retrievedCount = res.retrievedCount,
         )
     }
 
@@ -72,18 +76,20 @@ class AiServerAdapter(
         return EmbedResult(upserted = res.upserted)
     }
 
-    @Suppress("PropertyName")
     private data class SummaryResponse(
+        val symbol: String,
         val summary: String,
-        val evidences: List<EvidenceDto>,
+        @JsonProperty("key_reasons") val keyReasons: List<String> = emptyList(),
+        @JsonProperty("risk_notes") val riskNotes: List<String> = emptyList(),
+        val sources: List<SourceDto> = emptyList(),
+        @JsonProperty("retrieved_count") val retrievedCount: Int,
     )
 
-    @Suppress("PropertyName")
-    private data class EvidenceDto(
+    private data class SourceDto(
         val title: String,
         val source: String?,
-        @JsonProperty("source_url") val source_url: String?,
-        @JsonProperty("published_at") val published_at: String,
+        @JsonProperty("source_url") val sourceUrl: String?,
+        @JsonProperty("published_at") val publishedAt: String,
     )
 
     private data class EmbedResponse(val upserted: Int)

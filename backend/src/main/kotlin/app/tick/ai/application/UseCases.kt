@@ -11,11 +11,15 @@ interface EmbedStockNewsUseCase {
 }
 
 data class AiSummaryResult(
+    val symbol: String,
     val summary: String,
-    val evidences: List<Evidence>,
+    val keyReasons: List<String>,
+    val riskNotes: List<String>,
+    val sources: List<SummarySource>,
+    val retrievedCount: Int,
 )
 
-data class Evidence(
+data class SummarySource(
     val title: String,
     val source: String?,
     val sourceUrl: String?,
