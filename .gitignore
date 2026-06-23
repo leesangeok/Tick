@@ -38,6 +38,9 @@ out/
 # Claude Code (local session data)
 .claude/
 
+# Playwright MCP (browser sessions, snapshots)
+.playwright-mcp/
+
 # Secrets
 **/application-local.yml
 **/application-prod.yml
