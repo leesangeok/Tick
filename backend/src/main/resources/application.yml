@@ -72,3 +72,5 @@ tick:
     cookie-same-site: ${TICK_AUTH_COOKIE_SAME_SITE:Lax}
     cookie-secure: ${TICK_AUTH_COOKIE_SECURE:false}
     cookie-domain: ${TICK_AUTH_COOKIE_DOMAIN:}
+    # dev/internal 용 토큰 발급 endpoint 활성화 토글. prod 에선 절대 true 금지.
+    dev-token-enabled: ${TICK_AUTH_DEV_TOKEN_ENABLED:false}

@@ -19,4 +19,6 @@ data class AuthProperties(
     // 프론트와 백엔드가 같은 root 도메인의 서로 다른 서브도메인일 때 ".tickk.dev" 같은 값을 주면
     // 두 서브도메인이 같은 쿠키를 공유한다.
     val cookieDomain: String? = null,
+    // dev/internal 용 토큰 발급 endpoint 토글. prod 에선 false 유지.
+    val devTokenEnabled: Boolean = false,
 )
