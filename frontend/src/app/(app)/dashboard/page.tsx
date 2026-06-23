@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { fetchPortfolio } from "@/services/portfolioService";
 import { fetchOrders } from "@/services/orderService";
-import { mockAiReports } from "@/mocks/aiReports";
+import { fetchAiSummary } from "@/services/aiSummaryService";
 import { mockDailyAssets } from "@/mocks/dailyAssets";
 import { DashboardKpis } from "@/components/dashboard/DashboardKpis";
 import { DailyAssetChart } from "@/components/dashboard/DailyAssetChart";
 import { DepositButton } from "@/components/account/DepositButton";
+import { AiSummaryCard } from "@/components/ai/AiSummaryCard";
 import {
   formatCurrency,
   formatRelativeTime,
@@ -23,7 +24,14 @@ export default async function DashboardPage() {
     fetchOrders(),
   ]);
   const recentOrders = orders.slice(0, 4);
-  const dailySummary = mockAiReports.find((r) => r.type === "DAILY_SUMMARY");
+
+  // 보유 종목 중 평가금액 1순위 종목의 AI 요약. LLM 비용 줄이려고 1개만.
+  const topHolding = portfolio.holdings.length > 0
+    ? [...portfolio.holdings].sort((a, b) => b.evaluationAmount - a.evaluationAmount)[0]
+    : null;
+  const featuredSummary = topHolding
+    ? await fetchAiSummary(topHolding.symbol).catch(() => null)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -82,30 +90,25 @@ export default async function DashboardPage() {
         </div>
 
         <div className="space-y-6">
-          <Card
-            title="AI 포트폴리오 요약"
-            badge={<Sparkles className="h-3.5 w-3.5 text-gain" />}
-          >
-            <div className="p-4 text-sm leading-relaxed">
-              {dailySummary?.summary ??
-                "오늘의 시장 요약이 아직 생성되지 않았습니다."}
-            </div>
-            {dailySummary && (
-              <div className="border-t border-border px-4 py-3">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">
-                  근거
-                </p>
-                <ul className="space-y-1">
-                  {dailySummary.evidences.map((e, i) => (
-                    <li key={i} className="text-xs text-muted-foreground">
-                      · {e.title}{" "}
-                      <span className="text-muted-foreground/60">({e.source})</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </Card>
+          {topHolding && featuredSummary ? (
+            <AiSummaryCard
+              symbol={topHolding.symbol}
+              stockName={topHolding.name}
+              summary={featuredSummary}
+              compact
+            />
+          ) : (
+            <Card
+              title={topHolding ? `${topHolding.name} AI 분석` : "AI 분석"}
+              badge={<Sparkles className="h-3.5 w-3.5 text-gain" />}
+            >
+              <p className="p-4 text-sm text-muted-foreground">
+                {topHolding
+                  ? "AI 요약을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요."
+                  : "보유 종목이 없습니다. 종목을 매수하면 AI 분석을 확인할 수 있습니다."}
+              </p>
+            </Card>
+          )}
 
           <Card title="최근 거래" action={<Link href="/orders" className="text-xs text-muted-foreground hover:text-foreground">전체 보기 →</Link>}>
             <ul className="divide-y divide-border">
