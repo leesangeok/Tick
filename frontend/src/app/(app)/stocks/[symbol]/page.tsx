@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { Sparkles, Star } from "lucide-react";
 import { fetchPriceSeries, fetchStock } from "@/services/stockService";
 import { fetchAccount } from "@/services/accountService";
+import { fetchAiSummary } from "@/services/aiSummaryService";
 import { mockNews } from "@/mocks/news";
-import { mockAiReports } from "@/mocks/aiReports";
 import { OrderPanel } from "@/components/trading/OrderPanel";
 import { StockChart } from "@/components/stocks/StockChart";
 import {
@@ -22,16 +22,14 @@ type PageProps = {
 
 export default async function StockDetailPage({ params }: PageProps) {
   const { symbol } = await params;
-  const [stock, series, account] = await Promise.all([
+  const [stock, series, account, aiSummary] = await Promise.all([
     fetchStock(symbol),
     fetchPriceSeries(symbol, 60).catch(() => []),
     fetchAccount().catch(() => null),
+    fetchAiSummary(symbol).catch(() => null),
   ]);
   if (!stock) notFound();
   const news = mockNews.filter((n) => n.symbol === symbol);
-  const aiReport = mockAiReports.find(
-    (r) => r.symbol === symbol && r.type !== "DAILY_SUMMARY",
-  );
 
   const min = series.length > 0 ? Math.min(...series.map((p) => p.low)) : 0;
   const max = series.length > 0 ? Math.max(...series.map((p) => p.high)) : 0;
@@ -91,32 +89,82 @@ export default async function StockDetailPage({ params }: PageProps) {
             />
           </div>
 
-          {aiReport && (
+          {aiSummary && (
             <div className="rounded-lg border border-border bg-card">
-              <header className="flex items-center gap-2 border-b border-border px-4 py-3">
-                <Sparkles className="h-4 w-4 text-gain" />
-                <h2 className="text-sm font-semibold">
-                  AI {aiReport.type === "RISE_REASON" ? "상승" : "하락"} 이유 요약
-                </h2>
+              <header className="flex items-center justify-between border-b border-border px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-gain" />
+                  <h2 className="text-sm font-semibold">AI 주가 분석 요약</h2>
+                </div>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  뉴스 {aiSummary.retrievedCount}건 분석
+                </span>
               </header>
               <div className="p-4 text-sm leading-relaxed">
-                {aiReport.summary}
+                {aiSummary.summary}
               </div>
-              <div className="border-t border-border px-4 py-3">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">
-                  근거
-                </p>
-                <ul className="space-y-1">
-                  {aiReport.evidences.map((e, i) => (
-                    <li key={i} className="text-xs text-muted-foreground">
-                      · {e.title}{" "}
-                      <span className="text-muted-foreground/60">
-                        ({e.source} · {formatRelativeTime(e.publishedAt)})
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+
+              {aiSummary.keyReasons.length > 0 && (
+                <div className="border-t border-border px-4 py-3">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    핵심 요인
+                  </p>
+                  <ul className="space-y-1">
+                    {aiSummary.keyReasons.map((reason, i) => (
+                      <li key={i} className="text-xs text-muted-foreground">
+                        · {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {aiSummary.riskNotes.length > 0 && (
+                <div className="border-t border-border px-4 py-3">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    리스크 노트
+                  </p>
+                  <ul className="space-y-1">
+                    {aiSummary.riskNotes.map((note, i) => (
+                      <li key={i} className="text-xs text-muted-foreground">
+                        · {note}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {aiSummary.sources.length > 0 && (
+                <div className="border-t border-border px-4 py-3">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    근거
+                  </p>
+                  <ul className="space-y-1">
+                    {aiSummary.sources.map((s, i) => (
+                      <li key={i} className="text-xs text-muted-foreground">
+                        {s.sourceUrl ? (
+                          <a
+                            href={s.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-foreground"
+                          >
+                            · {s.title}
+                          </a>
+                        ) : (
+                          <span>· {s.title}</span>
+                        )}
+                        <span className="text-muted-foreground/60">
+                          {" "}
+                          ({s.source ?? "출처 미상"}
+                          {" · "}
+                          {formatRelativeTime(s.publishedAt)})
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
