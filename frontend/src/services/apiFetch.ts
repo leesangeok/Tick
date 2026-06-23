@@ -1,6 +1,24 @@
 import { cookies } from "next/headers";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+/**
+ * server (Next.js Node runtime) 와 client (browser) 가 backend 를 부를 때
+ * hostname 이 다르다.
+ *
+ * - server: docker network 내부에서 service name 으로 접근 (`http://backend:8080`).
+ *           브라우저는 그 호스트를 모르므로 client 쪽에선 쓰지 않는다.
+ *           BACKEND_INTERNAL_URL 미설정 시 NEXT_PUBLIC_API_URL 로 fallback (local 개발 시
+ *           backend/frontend 둘 다 host 에서 도는 케이스).
+ * - client: 브라우저가 그대로 호출 → 외부에서 보이는 backend origin 필요 (`http://localhost:8080`).
+ *           NEXT_PUBLIC_ prefix 라 빌드 타임에 client 번들에도 주입됨.
+ *
+ * SSR 분기: `typeof window === 'undefined'` 면 server.
+ */
+const SERVER_API_URL =
+  process.env.BACKEND_INTERNAL_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
+const CLIENT_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+const API_URL = typeof window === "undefined" ? SERVER_API_URL : CLIENT_API_URL;
 
 /**
  * 백엔드 공통 응답 형태. 모든 /api/v1/* 응답이 이 래퍼를 사용한다.
