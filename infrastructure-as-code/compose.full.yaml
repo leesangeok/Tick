@@ -52,6 +52,8 @@ services:
       NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
       NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
       TICK_AI_SERVER_URL: http://ai-server:8000
+      # 로컬 검증용 dev 토큰 발급 endpoint 활성화. prod 에선 절대 true 금지.
+      TICK_AUTH_DEV_TOKEN_ENABLED: "true"
     ports:
       - "8080:8080"
 
