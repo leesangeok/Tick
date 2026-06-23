@@ -18,57 +18,122 @@
 
 - 베이스 패키지: **`app.tick`** (`com.tick.backend` 아님)
 - 빌드: Spring Boot **3.5.2**, Kotlin **1.9.25**, Gradle Kotlin DSL, Java 21
-- 현재 의존성: `web`, `data-jpa`, `validation`, `flyway-core`, `flyway-database-postgresql`, `postgresql`, `actuator`, `jackson-module-kotlin`, `kotlin-reflect`
-- 아직 **없는** 것: Spring Security, Spring Kafka, Spring Data Redis, QueryDSL, Testcontainers, Springdoc OpenAPI, OAuth2 Client
+- 현재 의존성: `web`, `data-jpa`, `validation`, `flyway-core`, `flyway-database-postgresql`, `postgresql`, `actuator`, `jackson-module-kotlin`, `kotlin-reflect`, **`security`**, **`oauth2-client`**, **`jjwt 0.12.6`** (api/impl/jackson), 테스트: `spring-boot-starter-test`, `spring-security-test`, `kotlin-test-junit5`, **`mockk 1.13.13`**
+- 아직 **없는** 것: Spring Kafka, Spring Data Redis, QueryDSL, Testcontainers, Springdoc OpenAPI
 
 ### 디렉터리 구조 (현재)
 
+핵심 도메인은 대부분 hexagonal 로 전환 완료. `stock` 은 단순 조회 도메인이라 layered 유지. `auth/member/common/config` 는 cross-cutting / 단순 도메인.
+
 ```text
 backend/
-├── compose.yaml                              Postgres 16 (OrbStack)
+├── compose.yaml                              Postgres 16 (OrbStack, pgvector/pg16)
+├── Dockerfile                                Spring Boot bootJar 빌드
 ├── build.gradle.kts
 ├── src/main/resources/
-│   ├── application.yml                       datasource, jpa, flyway, server, tick.cors
+│   ├── application.yml                       datasource, jpa, flyway, server, security, oauth2, jwt, cors, naver, ai-server
 │   └── db/migration/
 │       ├── V1__stock_master.sql              10개 종목 시드
-│       └── V2__account_holding_order.sql     account/holding/order_history/deposit_history + demo 계정 시드
+│       ├── V2__account_holding_order.sql     account/holding/order_history/deposit_history
+│       ├── V3__member_auth.sql               member 테이블 + account.member_id FK
+│       ├── V4__refresh_token_and_demo_deprecation.sql
+│       ├── V5__watchlist.sql
+│       ├── V6__news_and_vector.sql           news + news_embedding (pgvector)
+│       └── V7__hash_columns_to_varchar.sql   refresh_token / news content_hash CHAR→VARCHAR
 └── src/main/kotlin/app/tick/
     ├── TickApplication.kt
-    ├── config/CorsConfig.kt
+    ├── config/                               CorsConfig
+    ├── common/
+    │   ├── domain/                           Money, Quantity, ProfitLoss, StockCode, AveragePriceCalculator
+    │   ├── exception/                        BusinessException, ErrorCode, GlobalExceptionHandler
+    │   └── response/                         ApiResponse
+    ├── auth/                                 SecurityConfig, JwtProvider/Filter/Properties/Cookies,
+    │                                         AuthController (me/refresh/logout),
+    │                                         DevAuthController (POST /dev-token, toggle),
+    │                                         KakaoOAuth2UserService, OAuth2Success/FailureHandler,
+    │                                         HttpCookieOAuth2AuthorizationRequestRepository,
+    │                                         RefreshTokenService + JPA, MemberProvisioner
+    ├── member/                               Member (JPA), MemberRepository
     ├── stock/                                StockMaster, StockMasterRepository, StockPriceGenerator,
-    │                                         StockDto, StockService, StockController
-    └── account/                              Account, Holding, OrderHistory, DepositHistory, Repositories,
-                                              Dto, AccountService, PortfolioService, OrderHistoryService,
-                                              TransactionService, Controllers
+    │                                         StockDto, StockService, StockController  (layered)
+    ├── account/                              hexagonal: domain/{Account, Holding, Deposit}
+    │                                                    application/{UseCases, Ports, AccountService,
+    │                                                      PortfolioService, TransactionService}
+    │                                                    adapter/web, adapter/persistence, adapter/stock
+    ├── order/                                hexagonal: domain/Order
+    │                                                    application/{UseCases, Ports, OrderService,
+    │                                                      OrderQueryService}
+    │                                                    adapter/web, adapter/persistence, adapter/stock
+    ├── news/                                 hexagonal: domain, application, adapter (web, persistence, naver)
+    ├── ai/                                   hexagonal: application/{UseCases, Ports, AiSummaryService}
+    │                                                    adapter/web, adapter/external (ai-server HTTP)
+    └── watchlist/                            hexagonal: domain, application, adapter (web, persistence)
 ```
 
 ### 핵심 파일 인덱스 (절대경로)
 
-- 도메인 엔티티: `backend/src/main/kotlin/app/tick/account/{Account,Holding,OrderHistory,DepositHistory}.kt`
-- 종목 마스터: `backend/src/main/kotlin/app/tick/stock/StockMaster.kt`
-- 가격 생성기 (프론트 mulberry32 와 동일한 알고리즘): `backend/src/main/kotlin/app/tick/stock/StockPriceGenerator.kt`
+- 공통 VO: `backend/src/main/kotlin/app/tick/common/domain/{Money,Quantity,ProfitLoss,StockCode,AveragePriceCalculator}.kt`
+- 인증/JWT: `backend/src/main/kotlin/app/tick/auth/{SecurityConfig,JwtProvider,JwtAuthenticationFilter,JwtCookies,RefreshTokenService}.kt`
+- dev/internal 토큰: `backend/src/main/kotlin/app/tick/auth/DevAuthController.kt` (`tick.auth.dev-token-enabled=true` 일 때만 등록)
+- 카카오 OAuth: `backend/src/main/kotlin/app/tick/auth/{KakaoOAuth2UserService,OAuth2SuccessHandler,OAuth2FailureHandler}.kt`
+- Member 프로비저닝: `backend/src/main/kotlin/app/tick/auth/MemberProvisioner.kt`
+- 주문 핵심: `backend/src/main/kotlin/app/tick/order/application/OrderService.kt` (buy/sell + 실현손익 계산)
+- 종목 마스터/가격 생성기 (프론트 mulberry32 와 동일): `backend/src/main/kotlin/app/tick/stock/{StockMaster,StockPriceGenerator}.kt`
+- 뉴스 수집/조회: `backend/src/main/kotlin/app/tick/news/...`
+- AI 요약 (ai-server 호출): `backend/src/main/kotlin/app/tick/ai/adapter/external/AiServerAdapter.kt`
 - CORS: `backend/src/main/kotlin/app/tick/config/CorsConfig.kt`
 - 마이그레이션: `backend/src/main/resources/db/migration/`
 - 앱 설정: `backend/src/main/resources/application.yml`
 
 ### 현재 API 엔드포인트
 
-```text
-GET    /api/stocks
-GET    /api/stocks/{symbol}
-GET    /api/stocks/{symbol}/prices?days=N
-GET    /api/account
-POST   /api/account/deposit
-GET    /api/portfolio
-GET    /api/orders
-GET    /api/transactions
-```
+전부 `/api/v1/*` prefix. 인증 정책은 [Security Rules](#endpoint-보호-정책-phase-3-도입-완료) 참고.
 
-`/api/v1/*` 가 아니라 `/api/*` 이다. v1 prefix 도입은 카카오 인증 단계에서 일괄 진행.
+```text
+# stock (public)
+GET    /api/v1/stocks
+GET    /api/v1/stocks/{symbol}
+GET    /api/v1/stocks/{symbol}/prices?days=N
+
+# auth (public)
+POST   /api/v1/auth/refresh
+POST   /api/v1/auth/logout
+GET    /login/oauth2/authorization/kakao         (Spring Security 자동)
+POST   /api/v1/auth/dev-token                    (toggle: tick.auth.dev-token-enabled=true)
+
+# auth (authenticated)
+GET    /api/v1/auth/me
+
+# account / portfolio / transactions (authenticated)
+GET    /api/v1/account
+POST   /api/v1/account/deposit
+GET    /api/v1/portfolio
+GET    /api/v1/transactions
+
+# orders (authenticated)
+GET    /api/v1/orders
+POST   /api/v1/orders/buy                        body: { stockCode, quantity, orderType }
+POST   /api/v1/orders/sell                       body: { stockCode, quantity, orderType }
+
+# watchlist (authenticated)
+GET    /api/v1/watchlist
+POST   /api/v1/watchlist/{symbol}
+DELETE /api/v1/watchlist/{symbol}
+
+# news (GET public, POST authenticated)
+GET    /api/v1/news/{symbol}?limit=N
+POST   /api/v1/news/{symbol}/collect?limit=N     (네이버 검색 API)
+
+# AI (authenticated, ai-server 프록시)
+GET    /api/v1/ai/stocks/{symbol}/summary
+POST   /api/v1/ai/stocks/{symbol}/embed
+```
 
 ### 사용자 식별 (현재)
 
-`Member` 도메인이 아직 없다. `account.external_id = 'demo'` 하드코딩으로 단일 계정만 사용. 카카오 OAuth 도입 시점에 `Member` 추가 + `Account.memberId` FK 추가 + `external_id` 폐기.
+`Member` 도메인 도입 완료 (`member` 테이블, V3). 카카오 OAuth 통과 시 `MemberProvisioner.upsertWithAccount(kakaoId, ...)` 가 Member + Account + welcome bonus (1천만원) 를 함께 만든다. `account.external_id = 'demo'` 하드코딩은 V4 마이그레이션에서 폐기됨. `Account.member_id` FK 사용.
+
+로컬 검증/테스트 환경에선 카카오 OAuth 우회용으로 `POST /api/v1/auth/dev-token` (toggle 활성 필요) 으로 Member + 토큰 즉시 발급 가능.
 
 ### Spring/Kotlin 버전 참고
 
@@ -84,18 +149,20 @@ Spring Initializr 가 AGENTS.md 를 생성하지 않으므로 (Next.js 만), 버
 
 ## Phase Roadmap
 
-| 영역 | 현재 (Phase 1-2) | 다음 (Phase 3) | 미래 (Phase 4+) |
-|---|---|---|---|
-| 구조 | layered + package-per-domain | account/order 도메인부터 점진적 hexagonal 전환 | 전 도메인 hexagonal |
-| 인증 | `demo` 하드코딩 | 카카오 OAuth + JWT + Member | RBAC, refresh rotation, 다중 OAuth provider |
-| 저장소 | Postgres + Flyway | + Redis (refresh token, 시세 캐시) | + Kafka (이벤트), pgvector (RAG) |
-| 외부 연동 | 없음 (mulberry32 가짜 시세) | LLM 클라이언트 (AI 리포트) | 실시간 시세 API (한투/키움), News API |
-| 통신 | REST | + WebSocket/SSE (실시간 시세) | + Kafka stream |
-| API prefix | `/api/*` | `/api/v1/*` 로 일괄 전환 | — |
-| 테스트 | JUnit5 (없음) | + MockK + Testcontainers | + Contract test |
-| 관찰성 | Actuator health/info | + 구조화 로그 | + Micrometer + OpenTelemetry |
+현재 위치: Phase 3 거의 완료 + Phase 4 일부 (News / AI Summary / pgvector) 선행 진입.
 
-본 문서에서 **Phase 4** 로 표시된 섹션은 가이드만 제공하며 현재 코드엔 미적용. 도입 시점에 본 섹션의 규칙을 적용한다.
+| 영역 | 현재 상태 | 남은 다음 단계 | 미래 |
+|---|---|---|---|
+| 구조 | account/order/news/ai/watchlist hexagonal 완료, stock 만 layered (단순 조회) | — | 전 도메인 hexagonal (필요 시) |
+| 인증 | ✅ 카카오 OAuth + JWT + Member + Refresh Token + dev-token toggle | 카카오 OAuth E2E 검증 (실 키), RBAC 도입 시점 결정 | refresh rotation, 다중 OAuth provider |
+| 저장소 | ✅ Postgres + Flyway + pgvector | Redis (refresh token store, 시세 캐시) | Kafka (이벤트), S3 (정적 자산) |
+| 외부 연동 | ✅ 네이버 검색 API (뉴스), ai-server (OpenAI/Anthropic) | — | 실시간 시세 API (한투/키움) |
+| 통신 | REST | WebSocket/SSE (실시간 시세) | Kafka stream |
+| API prefix | ✅ `/api/v1/*` | — | — |
+| 테스트 | MockK 의존성 등록됨, 테스트 코드 부재 | 핵심 도메인 단위/통합 테스트 작성, Testcontainers 도입 | Contract test |
+| 관찰성 | Actuator health/info, ai-server 는 Langfuse 트레이스 | 구조화 로그, backend 측 Micrometer | OpenTelemetry 분산 트레이싱 |
+
+본 문서에서 **Phase 4** 로 표시된 섹션 중 아직 미진 영역(Kafka, Redis, WebSocket) 은 가이드만 제공하며 현재 코드엔 미적용. 도입 시점에 본 섹션의 규칙을 적용한다.
 
 ---
 
@@ -103,7 +170,7 @@ Spring Initializr 가 AGENTS.md 를 생성하지 않으므로 (Next.js 만), 버
 
 이 프로젝트의 **목표 아키텍처**는 **DDD 기반 도메인 중심 설계 + Hexagonal Architecture 의 Port/Adapter 패턴** 이다.
 
-현재 (Phase 1-2) 는 layered + 도메인 패키지 구조. account/order 같은 핵심 도메인부터 점진적으로 hexagonal 로 전환한다. 단순 CRUD 도메인(stock 등)은 layered 유지 가능.
+현재 account/order/news/ai/watchlist 는 hexagonal 전환 완료. stock 은 단순 조회라 layered 유지.
 
 핵심 목표:
 
@@ -138,30 +205,31 @@ Spring Initializr 가 AGENTS.md 를 생성하지 않으므로 (Next.js 만), 버
 ### 현재 적용
 
 - Language: **Kotlin 1.9.25**
-- Framework: **Spring Boot 3.5.2** (web, data-jpa, validation, actuator)
+- Framework: **Spring Boot 3.5.2** (web, data-jpa, validation, actuator, **security**, **oauth2-client**)
 - Build: **Gradle Kotlin DSL**
-- DB: **PostgreSQL 16** (docker compose)
+- DB: **PostgreSQL 16** (docker compose) + **pgvector** (AI summary RAG)
 - Migration: **Flyway 10** (`flyway-core` + `flyway-database-postgresql`)
 - ORM: Spring Data JPA + Hibernate 6.6
 - JSON: jackson-module-kotlin
 - Runtime: Java 21
+- Security: Spring Security + OAuth2 Client (카카오), JWT (`io.jsonwebtoken:jjwt 0.12.6` api/impl/jackson)
+- 테스트 deps: JUnit5, MockK 1.13.13, spring-security-test (테스트 코드 자체는 아직 없음)
+- 외부: 네이버 검색 API (뉴스 수집), ai-server (FastAPI, 같은 docker network)
 
-### Phase 3 도입 예정
+### 도입 예정
 
-- Security: Spring Security + Spring Boot Starter OAuth2 Client (카카오)
-- JWT: `io.jsonwebtoken:jjwt` 또는 `nimbus-jose-jwt`
-- Cache: Redis (Spring Data Redis)
-- 테스트: JUnit5 + MockK + Testcontainers
+- Cache: Redis (Spring Data Redis) — refresh token store, 시세 캐시
 - API Docs: Springdoc OpenAPI (선택)
-
-### Phase 4 도입 예정
-
-- Event Streaming: Kafka (Spring Kafka)
-- LLM: OpenAI / Anthropic SDK (port 뒤로 캡슐화)
+- Event Streaming: Kafka (Spring Kafka) — 실시간 시세 / AI 비동기 트리거
 - 시세 API: 한투/키움 등 (port 뒤)
-- pgvector: AI 리포트 RAG
-- Observability: Micrometer + OpenTelemetry
+- Observability: Micrometer + OpenTelemetry (backend), Loki/CloudWatch 구조화 로그
+- 통합 테스트: Testcontainers (Postgres 컨테이너 + Flyway)
 - Infra Target: Docker, AWS EC2/ECS, RDS, ElastiCache, MSK
+
+### 이미 도입됨 (별도)
+
+- LLM: OpenAI embedding + Anthropic Claude (ai-server 측, port 뒤로 캡슐화). backend 는 `AiServerAdapter` HTTP/1.1 로 호출.
+- 관찰성 (ai-server): Langfuse (LangChain CallbackHandler + use case root span).
 
 ---
 
@@ -169,64 +237,45 @@ Spring Initializr 가 AGENTS.md 를 생성하지 않으므로 (Next.js 만), 버
 
 | 도메인 | 책임 | 현재 상태 |
 |---|---|---|
-| Auth | 인증, JWT, Refresh Token | Phase 3 |
-| Member | 회원 | Phase 3 (카카오 OAuth 와 함께) |
-| Account | 모의투자 계좌, 가상 현금 | ✅ 구현됨 (단일 demo) |
-| Stock | 종목 정보, 시세 | ✅ 구현됨 (가짜 가격) |
-| Order | 매수/매도 주문 | ✅ 조회만 구현됨 (POST 는 Phase 2-끝) |
-| Holding | 보유 종목 | ✅ 구현됨 |
-| Trade | 체결 내역 | (현재 OrderHistory 에 흡수) |
-| Portfolio | 평가금액, 손익, 수익률 | ✅ 구현됨 (조회 모델) |
-| Watchlist | 관심 종목 | Phase 3 |
-| Market | 실시간 시세 이벤트, WebSocket Push | Phase 4 |
-| News | 종목 관련 뉴스 | Phase 4 (현재 frontend mock) |
-| AiSummary | 주가 상승/하락 이유 요약 | Phase 4 (현재 frontend mock) |
+| Auth | 인증, JWT, Refresh Token, 카카오 OAuth, dev-token toggle | ✅ 구현됨 |
+| Member | 회원 (카카오 user 기반) | ✅ 구현됨 (단순 entity + MemberProvisioner) |
+| Account | 모의투자 계좌, 가상 현금 | ✅ hexagonal, Member 당 1개, welcome bonus 1천만원 |
+| Stock | 종목 정보, 시세 | ✅ layered (단순 조회, mulberry32 가짜 가격) |
+| Order | 매수/매도 주문 | ✅ hexagonal, POST buy/sell + 실현손익 자동 계산 |
+| Holding | 보유 종목 | ✅ hexagonal (account 도메인 내), 평균 매입단가 재계산 |
+| Trade | 체결 내역 | 현재 `Order` 가 체결 시점/실현손익까지 흡수. 별도 Trade 도메인 없음 |
+| Portfolio | 평가금액, 손익, 수익률 | ✅ hexagonal, `PortfolioService` 조회 모델 |
+| Watchlist | 관심 종목 | ✅ hexagonal CRUD |
+| News | 종목 관련 뉴스 (네이버 검색 API) | ✅ hexagonal, 수동 collect trigger |
+| AiSummary | 주가 상승/하락 이유 요약 (RAG) | ✅ hexagonal, ai-server (FastAPI + LangChain + pgvector) HTTP 호출 |
+| Market | 실시간 시세 이벤트, WebSocket Push | Phase 4 (미구현) |
 
 ---
 
 ## Package Structure
 
-### 현재 (Phase 1-2)
+### 현재
 
 ```text
 app.tick
- ├── config
- │   └── CorsConfig
- ├── stock
- │   ├── StockMaster (Entity)
- │   ├── StockMasterRepository
- │   ├── StockPriceGenerator
- │   ├── StockDto
- │   ├── StockService
- │   └── StockController
- └── account
-     ├── Account / Holding / OrderHistory / DepositHistory (Entity)
-     ├── Repositories
-     ├── Dto
-     ├── AccountService / PortfolioService / OrderHistoryService / TransactionService
-     └── Controllers
+ ├── config/                CorsConfig
+ ├── common/
+ │   ├── domain/            Money, Quantity, ProfitLoss, StockCode, AveragePriceCalculator
+ │   ├── exception/         BusinessException, ErrorCode, GlobalExceptionHandler
+ │   └── response/          ApiResponse
+ ├── auth/                  SecurityConfig, JwtProvider/Filter/Cookies/Properties, AuthController,
+ │                          DevAuthController (toggle), Kakao OAuth, RefreshTokenService,
+ │                          MemberProvisioner
+ ├── member/                Member (JPA) + Repository  (단순 entity, hexagonal 아님)
+ ├── stock/                 StockMaster, StockPriceGenerator, StockService, StockController  (layered)
+ ├── account/               hexagonal  (Account / Holding / Deposit + Portfolio 조회 모델)
+ ├── order/                 hexagonal  (Order, buy/sell + 실현손익)
+ ├── news/                  hexagonal  (네이버 검색 API)
+ ├── ai/                    hexagonal  (ai-server HTTP 어댑터)
+ └── watchlist/             hexagonal  (CRUD)
 ```
 
-### 목표 (Phase 3+, 도메인별 hexagonal)
-
-```text
-app.tick
- ├── common
- │   ├── config
- │   ├── exception
- │   ├── response
- │   ├── security
- │   └── util
- ├── auth
- ├── member
- ├── account
- ├── stock
- ├── order
- ├── portfolio
- ├── market
- ├── news
- └── ai
-```
+> Portfolio, Market 같이 "조회 모델" 또는 "미구현" 영역은 별도 패키지로 분리되지 않음 (Portfolio = `account.application.PortfolioService`). Market 은 Phase 4 도입 시 신규 패키지.
 
 핵심 도메인의 hexagonal 구조 (예: `order`):
 
@@ -791,55 +840,18 @@ Spring Boot 3.x + Flyway 10 에서는 Postgres 모듈이 분리됨. `flyway-data
 
 ## API Rules
 
-### 현재 (Phase 1-2)
+REST API prefix: **`/api/v1/*`** 일괄 적용. 전체 엔드포인트 목록은 위 [현재 API 엔드포인트](#현재-api-엔드포인트) 참고.
 
-REST API prefix: **`/api/*`**
-
-```text
-GET    /api/stocks
-GET    /api/stocks/{symbol}
-GET    /api/stocks/{symbol}/prices?days=N
-
-GET    /api/account
-POST   /api/account/deposit
-
-GET    /api/portfolio
-GET    /api/orders
-GET    /api/transactions
-```
-
-### Phase 3 (카카오 인증 도입과 함께)
-
-`/api/*` → **`/api/v1/*`** 일괄 전환 + 인증 엔드포인트 추가.
+### 향후 추가 후보
 
 ```text
-POST   /api/v1/auth/kakao/callback   (백엔드 자동)
-POST   /api/v1/auth/refresh
-POST   /api/v1/auth/logout
-GET    /api/v1/members/me
-
-GET    /api/v1/stocks
-GET    /api/v1/stocks/{stockCode}
-GET    /api/v1/stocks/{stockCode}/prices
-
-POST   /api/v1/orders/buy
-POST   /api/v1/orders/sell
-GET    /api/v1/orders
-GET    /api/v1/orders/{orderId}
-DELETE /api/v1/orders/{orderId}
-
-GET    /api/v1/portfolio
-GET    /api/v1/portfolio/holdings
-GET    /api/v1/trades
-
-GET    /api/v1/watchlist
-POST   /api/v1/watchlist
-DELETE /api/v1/watchlist/{stockCode}
-
-GET    /api/v1/ai/stocks/{stockCode}/summary
+GET    /api/v1/orders/{orderId}        # 단건 조회
+DELETE /api/v1/orders/{orderId}        # 미체결 취소 (현재 모든 주문이 즉시 FILLED 라 미해당)
+GET    /api/v1/trades                  # Trade 도메인 분리 시
+GET    /api/v1/portfolio/holdings      # holdings 만 분리 조회 (현재는 portfolio 응답에 포함)
 ```
 
-전환 시 프론트 `src/services/*.ts` 의 fetch URL 도 동시 변경.
+엔드포인트 추가/변경 시 프론트 `src/services/*.ts` 의 fetch URL 도 동시 변경.
 
 ### Controller 규칙
 
@@ -866,7 +878,7 @@ data class ApiResponse<T>(
 }
 ```
 
-> **현재 상태 주의**: 현재 컨트롤러들은 `ApiResponse` 로 감싸지 않고 raw object 를 반환 중. Phase 3 (`/api/v1` 전환) 와 함께 일괄 적용 예정. 그 전까지는 프론트 service 가 raw 응답 파싱.
+전 컨트롤러가 `ApiResponse<T>` 로 응답을 감싼다 (실제 적용 완료). 응답 본체는 `data` 필드에 들어가며 프론트 service 는 그 layer 를 unwrap.
 
 ---
 
@@ -1086,15 +1098,16 @@ TTL 필수. Redis 접근은 반드시 Outbound Adapter 뒤.
 
 #### 구조
 
-- AI Client 는 반드시 `AiSummaryPort` 뒤. 모델/프로바이더 변경에 도메인 영향 없도록.
-- 프롬프트 입력: 도메인 인풋 (뉴스/공시/가격 이벤트) 만
-- 응답 구조: `AiSummaryResult(summary: String, evidences: List<Evidence>)`
-- 토큰 비용 추적은 어댑터 레벨
-- LLM 응답 캐싱 (Redis): Phase 4
+- ✅ AI Client 는 `AiServerPort` 뒤 (구현체 `AiServerAdapter` — ai-server HTTP 호출, HTTP/1.1 강제)
+- ✅ 응답 구조: `AiSummaryResult(symbol, summary, keyReasons, riskNotes, sources, retrievedCount)`
+- 프롬프트 입력: 도메인 인풋 (뉴스/공시/가격 이벤트) 만 — ai-server 가 pgvector retrieval 로 직접 구성
+- 토큰 비용 추적: ai-server 측 Langfuse 자동 trace
+- LLM 응답 캐싱 (Redis): 미진 (Phase 4)
 
 ```kotlin
-interface AiSummaryPort {
-    fun summarize(command: AiSummaryCommand): AiSummaryResult
+interface AiServerPort {
+    fun summarize(stockCode: StockCode, stockName: String): AiSummaryResult
+    fun embed(stockCode: StockCode): EmbedResult
 }
 ```
 
@@ -1102,37 +1115,41 @@ interface AiSummaryPort {
 
 실시간 시세 push, 주문 체결 알림. WebSocket Handler 는 Inbound Adapter.
 
-### News (Phase 4)
+### News
 
-종목별 뉴스 수집 + 저장. 현재 frontend mock.
+✅ 구현 완료. 네이버 검색 API 로 종목별 뉴스 수집 → DB 저장 → ai-server 가 임베딩/retrieval. 현재 자동 cron 없음 (수동 `POST /api/v1/news/{symbol}/collect` 트리거).
 
-### Watchlist (Phase 3)
+### Watchlist
 
-관심 종목. 단순 CRUD 라 hexagonal 강제 X, layered 로 충분.
+✅ 구현 완료. CRUD, hexagonal 유지 (단순하지만 일관성을 위해).
 
 ---
 
 ## Security Rules
 
-### Phase 3 도입 (카카오 OAuth + JWT)
+### 현재 (Phase 3 도입 완료)
 
-- 인증: JWT 기반
-- Access Token + Refresh Token 분리. Refresh 는 Redis 저장.
-- 카카오 OAuth: `spring-boot-starter-oauth2-client`, redirect URI = `http://localhost:8080/login/oauth2/code/kakao`
-- 시크릿: 환경변수 (`KAKAO_CLIENT_ID`, `KAKAO_CLIENT_SECRET`, `JWT_SECRET`)
-- Controller 에서 직접 토큰 파싱 X. `@AuthenticationPrincipal` 또는 custom resolver 로 주입.
-- JWT Provider 는 Port 로 분리 가능
-- 비밀번호 저장이 필요한 경우 (현재는 카카오 전용이라 불필요): BCrypt
+- 인증: JWT 기반 (`io.jsonwebtoken:jjwt`, HS512)
+- Access Token + Refresh Token 분리. Refresh 는 **현재 Postgres 의 `refresh_token` 테이블** (Redis 는 Phase 4 후보).
+- Refresh token 은 raw 값 노출 없이 hash 만 저장 (`RefreshTokenCrypto`). 토큰 검증 시 hash 비교.
+- 카카오 OAuth: `spring-boot-starter-oauth2-client`, redirect URI = `http://localhost:8080/login/oauth2/code/kakao`. OAuth2 authorization request 는 cookie 기반 (`HttpCookieOAuth2AuthorizationRequestRepository`).
+- 시크릿: 환경변수 (`KAKAO_CLIENT_ID`, `KAKAO_CLIENT_SECRET`, `TICK_JWT_SECRET`, `NAVER_CLIENT_ID/SECRET` 등)
+- Controller 에서 직접 토큰 파싱 X. `@AuthenticationPrincipal` 로 `AuthPrincipal` 주입 (`JwtAuthenticationFilter` 가 세팅).
+- 토큰 전달: `Authorization: Bearer ...` 또는 HttpOnly cookie (`tick_at` / `tick_rt`) 양쪽 지원.
 
-### Phase 1-2 (현재)
+### dev/internal 전용
 
-인증 없음. 단일 demo 계정. 외부에 노출하지 않을 것 (CORS 가 `localhost:3000` 만 허용).
+- `POST /api/v1/auth/dev-token` (`tick.auth.dev-token-enabled=true` 일 때만 bean 등록). 카카오 OAuth 통과 없이 Member + Account + 토큰 즉시 발급. **prod 에선 반드시 false 유지.**
 
-### Endpoint 보호 정책 (Phase 3)
+### Endpoint 보호 정책 (현재)
+
+`SecurityConfig.kt` 참고.
 
 ```text
-public:           /actuator/health, /login/oauth2/**, /oauth2/**
-authenticated:    /api/v1/**
+public:           /actuator/health, /actuator/info, /login/**, /oauth2/**,
+                  /api/v1/auth/**, /api/v1/stocks, /api/v1/stocks/**,
+                  GET /api/v1/news/**
+authenticated:    그 외 모든 /api/v1/**
 ```
 
 ---
@@ -1155,7 +1172,7 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."),
     ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "계좌를 찾을 수 없습니다."),
 
-    // 인증 (Phase 3 도입 시 활성화)
+    // 인증
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     KAKAO_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "카카오 토큰이 유효하지 않습니다."),
     JWT_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
@@ -1404,77 +1421,82 @@ Claude 가 하면 안 되는 것:
 
 ## Development Priority
 
-### 완료 (Phase 1-2)
+### 완료
 
-1. ✅ 프로젝트 기본 세팅
-2. ✅ Postgres + Flyway + Stock master 시드
-3. ✅ Stock 목록 / 단건 / 시세 조회 API
-4. ✅ Account / Holding / OrderHistory / DepositHistory 스키마
-5. ✅ Account / Portfolio / Orders / Transactions 조회 API
-6. ✅ Deposit POST API
-7. ✅ CORS for `localhost:3000`
+- ✅ 프로젝트 기본 세팅 (Spring Boot 3.5.2, Kotlin 1.9.25, Java 21)
+- ✅ Postgres 16 + pgvector + Flyway (V1~V7)
+- ✅ Stock master 시드 (10종목) + 가격 생성기 (mulberry32)
+- ✅ Stock 조회 API
+- ✅ Account / Holding / Deposit hexagonal (VO: Money/Quantity/ProfitLoss/StockCode + AveragePriceCalculator)
+- ✅ Account / Portfolio / Transactions 조회 + Deposit POST
+- ✅ Order hexagonal + POST buy/sell + 실현손익 자동 계산
+- ✅ Member 도메인 (V3) + `account.member_id` FK + `demo` 폐기 (V4)
+- ✅ Spring Security + 카카오 OAuth + JWT (access/refresh) + dev-token toggle
+- ✅ `/api/v1/*` prefix 일괄 적용 + `ApiResponse<T>` 응답 wrap
+- ✅ Watchlist hexagonal CRUD (V5)
+- ✅ News 도메인 + 네이버 검색 API 수집 (V6)
+- ✅ AI Summary (RAG) — ai-server (FastAPI + LangChain + pgvector) HTTP/1.1 호출
+- ✅ pgvector 스키마 + 임베딩 upsert (ai-server 측)
+- ✅ Observability (ai-server 측 Langfuse trace + use case root span)
+- ✅ CORS for `localhost:3000`
 
-### 진행 중 (Phase 2 마무리)
+### 진행 중 / 즉시 다음
 
-8. POST 주문 (매수/매도) 유스케이스 + 실현손익 자동 계산
-9. 도메인 분리 시작 — Money/Quantity/ProfitLoss VO 도입, `app.tick.account` → hexagonal 전환
+- 핵심 도메인 단위/통합 테스트 작성 (의존성은 등록됨: MockK, spring-security-test)
+- 카카오 OAuth E2E 실 키 검증 + 프론트 로그인 흐름 마무리
+- Frontend AI summary mock 제거 → 실제 backend API 연동
 
-### 다음 (Phase 3)
+### 다음 (Phase 4 진입)
 
-10. Member 도메인 + `users` 테이블 (V3 마이그레이션)
-11. Spring Security + 카카오 OAuth + JWT
-12. `account.member_id` FK, `external_id = 'demo'` 폐기
-13. `/api/*` → `/api/v1/*` 일괄 전환 + 프론트 service 수정
-14. Watchlist
-15. Redis (refresh token, 시세 캐시)
-
-### 미래 (Phase 4)
-
-16. Kafka (실시간 시세 이벤트, AI 비동기 트리거)
-17. WebSocket / SSE 실시간 가격 전송
-18. News 수집
-19. AI 상승/하락 이유 요약 (LLM port + adapter)
-20. 인기 종목 랭킹
-21. pgvector RAG
-22. Observability (메트릭 / 트레이싱)
+- Redis 도입 — refresh token store 이전, 시세 캐시, AI summary 캐시
+- News 자동 수집 cron 또는 외부 트리거 (현재는 수동 collect API)
+- WebSocket / SSE 실시간 시세 전송
+- Kafka (실시간 시세 이벤트, AI 비동기 트리거)
+- 외부 시세 API 연동 (한투/키움 등) — 현재 mulberry32 가짜 가격
+- 인기 종목 랭킹
+- backend Micrometer + OpenTelemetry (ai-server 와 동일한 trace 연결)
+- Testcontainers 기반 통합 테스트
 
 ---
 
 ## Hexagonal Migration Path
 
-현재 layered 코드를 도메인별로 점진 전환. 한 번에 다 안 함.
+현재 hexagonal 전환은 **대부분 완료**. 본 섹션은 새 도메인 추가 시 따라야 할 패턴 가이드 + 기록 보존 용도.
 
-### Step 1: `account` 도메인 hexagonal 전환
+### ✅ Step 1: `account` 도메인 hexagonal 전환
 
-- `domain/` 폴더 생성 — Account / Holding / OrderHistory / DepositHistory 를 도메인 모델로 (JPA 어노테이션 제거)
-- VO 도입: `Money`, `Quantity`, `ProfitLoss`, `StockCode`
-- `application/port/in/` — `GetAccountUseCase`, `DepositUseCase`, `GetPortfolioUseCase`, `GetOrdersUseCase`, `GetTransactionsUseCase`
-- `application/port/out/` — `LoadAccountPort`, `SaveAccountPort`, `LoadHoldingsPort`, `LoadOrderHistoryPort`, `LoadDepositHistoryPort`, `SaveDepositHistoryPort`
-- `application/service/` — 기존 AccountService / PortfolioService / OrderHistoryService / TransactionService 를 UseCase 구현체로 리팩토링
-- `adapter/in/web/` — 기존 Controllers.kt 분할
-- `adapter/out/persistence/` — JPA Entity (`AccountJpaEntity` 등) + Repository + Mapper + PersistenceAdapter
-- API contract 동일 유지 (프론트 코드 변경 X)
-- 테스트 통과 확인
+- `domain/` — Account / Holding / Deposit 도메인 모델 (JPA 어노테이션 제거, mapper 로 분리)
+- VO: `Money`, `Quantity`, `ProfitLoss`, `StockCode` (`common/domain/`)
+- `application/` — UseCases, Ports, AccountService / PortfolioService / TransactionService
+- `adapter/web/`, `adapter/persistence/`, `adapter/stock/`
+- API contract 동일 유지
 
-### Step 2: 매수/매도 POST 주문 추가 + `order` 도메인 분리
+### ✅ Step 2: 매수/매도 POST 주문 추가 + `order` 도메인 분리
 
-- `app.tick.order` 패키지 신설 (account 에서 OrderHistory 이동)
-- `CreateOrderUseCase` (buy/sell)
-- `OrderHistory` → 도메인 `Order` + `OrderJpaEntity` 분리
-- 실현손익 자동 계산 (`AveragePriceCalculator` Domain Service)
+- `app.tick.order` 패키지 신설 (account 에서 OrderHistory 분리)
+- `CreateOrderUseCase` (buy/sell), `GetOrdersUseCase`
+- 도메인 `Order` + `OrderJpaEntity` + `OrderMapper` 분리
+- 실현손익 자동 계산 (`AveragePriceCalculator.realizedProfitLoss()`)
 
-### Step 3: 카카오 OAuth + `member` / `auth` 도메인 신설
+### ✅ Step 3: 카카오 OAuth + `member` / `auth` 도메인 신설
 
-- `member` 도메인은 처음부터 hexagonal 로
-- `auth` 는 Spring Security 통합이라 layered + 분리
+- `member` — 단순 entity + Repository (hexagonal 안 함, 외부에서 변경 거의 없음)
+- `auth` — Spring Security 통합이라 layered. `MemberProvisioner` 가 OAuth 성공 시 Member + Account upsert.
+- V3 (member + auth), V4 (refresh_token + demo deprecation) 마이그레이션 완료.
 
-### Step 4 이후: 나머지 도메인
+### ✅ Step 4: 나머지 도메인
 
-- `stock` 은 layered 유지 가능 (단순 조회). 실시간 시세 API 도입 시 어댑터 분리.
-- `watchlist` 는 단순 CRUD, layered 충분.
-- `ai`, `news`, `market` 는 처음부터 hexagonal (외부 의존 多).
+- `stock` — layered 유지 (단순 조회). 실시간 시세 API 도입 시 외부 adapter 분리 예정.
+- `watchlist` — hexagonal CRUD (V5).
+- `news` — hexagonal + 네이버 검색 API adapter (V6).
+- `ai` — hexagonal + ai-server HTTP adapter.
 
-각 step 마다 **API contract 동일 유지 + 동작 테스트 통과** 가 합격선.
+### 남은 도메인
+
+- `market` — 실시간 시세 이벤트 / WebSocket Push (Phase 4 에 신규 추가).
+- `trade` — 현재 `Order` 가 체결 시점/실현손익 흡수. 별도 분리 시점은 주문/체결 분리가 필요해질 때.
+
+각 새 도메인 추가 시 **API contract 동일 유지 + 동작 테스트 통과** 가 합격선.
 
 ---
 
@@ -1490,7 +1512,8 @@ Claude 는 코드 작성 시:
 - 핵심 비즈니스 로직에는 테스트 코드 함께 작성
 - 불확실한 외부 API 스펙은 임의로 단정 X → TODO 또는 interface 분리
 - 기존 아키텍처 규칙을 깨는 변경은 먼저 이유 설명
-- **현재 코드 (Phase 1-2 layered) 를 수정할 때는 hexagonal 마이그레이션 단계인지, 단순 패치인지 명시**
+- 핵심 도메인은 hexagonal 가이드(domain → application → adapter 의존성 방향) 준수. 새 도메인 추가 시 layered 가 더 적합한지 판단 → 결정 사유 명시
+- `stock` 같이 layered 유지 중인 영역을 hexagonal 로 옮기는 변경은 별도 PR 로 분리
 
 ---
 
