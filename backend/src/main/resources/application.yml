@@ -74,3 +74,11 @@ tick:
     cookie-domain: ${TICK_AUTH_COOKIE_DOMAIN:}
     # dev/internal 용 토큰 발급 endpoint 활성화 토글. prod 에선 절대 true 금지.
     dev-token-enabled: ${TICK_AUTH_DEV_TOKEN_ENABLED:false}
+  stock-quote:
+    # yahoo 또는 mulberry. 기본 yahoo (실시간 15분 지연 데이터).
+    # 외부 API 불가한 환경 (오프라인 테스트) 에선 mulberry 로 전환.
+    provider: ${TICK_STOCK_QUOTE_PROVIDER:yahoo}
+    yahoo:
+      base-url: ${YAHOO_FINANCE_BASE_URL:https://query1.finance.yahoo.com}
+      quote-ttl-sec: ${YAHOO_QUOTE_TTL_SEC:30}
+      series-ttl-sec: ${YAHOO_SERIES_TTL_SEC:3600}
