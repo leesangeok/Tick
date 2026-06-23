@@ -30,33 +30,38 @@ class SummarizeStockUseCase:
         self._trace = trace
 
     async def execute(self, command: SummarizeStockCommand) -> StockSummaryResult:
-        query_text = f"{command.stock_name}({command.symbol.value}) 주가 변동 이유 실적 뉴스"
-        query_embedding = await self._embedding.embed(query_text)
-
-        news = await self._retriever.retrieve(
-            RetrievalQuery(
-                symbol=command.symbol,
-                embedding=query_embedding,
-                top_k=settings.retrieval_top_k,
-                days_window=settings.retrieval_days_window,
-            )
-        )
-
-        summary = await self._llm.generate_stock_summary(
-            symbol=command.symbol,
+        async with self._trace.span(
+            "summarize_stock",
+            symbol=command.symbol.value,
             stock_name=command.stock_name,
-            news=news,
-        )
+        ):
+            query_text = f"{command.stock_name}({command.symbol.value}) 주가 변동 이유 실적 뉴스"
+            query_embedding = await self._embedding.embed(query_text)
 
-        await self._trace.record(
-            TraceEvent(
-                name="summary_generated",
-                metadata={
-                    "symbol": command.symbol.value,
-                    "news_count": len(news),
-                    "summary_chars": len(summary.summary),
-                },
+            news = await self._retriever.retrieve(
+                RetrievalQuery(
+                    symbol=command.symbol,
+                    embedding=query_embedding,
+                    top_k=settings.retrieval_top_k,
+                    days_window=settings.retrieval_days_window,
+                )
             )
-        )
 
-        return StockSummaryResult(summary=summary, retrieved_count=len(news))
+            summary = await self._llm.generate_stock_summary(
+                symbol=command.symbol,
+                stock_name=command.stock_name,
+                news=news,
+            )
+
+            await self._trace.record(
+                TraceEvent(
+                    name="summary_generated",
+                    metadata={
+                        "symbol": command.symbol.value,
+                        "news_count": len(news),
+                        "summary_chars": len(summary.summary),
+                    },
+                )
+            )
+
+            return StockSummaryResult(summary=summary, retrieved_count=len(news))

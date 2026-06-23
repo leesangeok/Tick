@@ -19,15 +19,20 @@ class EmbedNewsUseCase:
         self._trace = trace
 
     async def execute(self, command: EmbedNewsCommand) -> EmbedResult:
-        upserted = await self._retriever.upsert_missing_embeddings(
-            symbol=command.symbol,
-            embed_fn=self._embedding.embed_batch,
+        async with self._trace.span(
+            "embed_news",
+            symbol=command.symbol.value,
             batch_limit=command.batch_limit,
-        )
-        await self._trace.record(
-            TraceEvent(
-                name="news_embedded",
-                metadata={"symbol": command.symbol.value, "upserted": upserted},
+        ):
+            upserted = await self._retriever.upsert_missing_embeddings(
+                symbol=command.symbol,
+                embed_fn=self._embedding.embed_batch,
+                batch_limit=command.batch_limit,
             )
-        )
-        return EmbedResult(upserted=upserted)
+            await self._trace.record(
+                TraceEvent(
+                    name="news_embedded",
+                    metadata={"symbol": command.symbol.value, "upserted": upserted},
+                )
+            )
+            return EmbedResult(upserted=upserted)
