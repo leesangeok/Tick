@@ -56,6 +56,8 @@ x-backend: &backend
   depends_on:
     postgres:
       condition: service_healthy
+    redis:
+      condition: service_healthy
   mem_limit: 768m
   environment:
     SPRING_PROFILES_ACTIVE: prod
@@ -75,6 +77,8 @@ x-backend: &backend
     NAVER_CLIENT_ID: $${NAVER_CLIENT_ID}
     NAVER_CLIENT_SECRET: $${NAVER_CLIENT_SECRET}
     TICK_AI_SERVER_URL: http://ai-server:8000
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
 
 services:
   postgres:
@@ -91,6 +95,17 @@ services:
       test: ["CMD-SHELL", "pg_isready -U tick -d tick"]
       interval: 10s
       timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: tick-redis
+    restart: unless-stopped
+    # 시세 캐시 + 향후 refresh token store / AI summary 캐시. 영구 데이터 아니므로 volume 없음.
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
       retries: 10
 
   backend-a:

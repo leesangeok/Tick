@@ -8,22 +8,26 @@ import app.tick.stock.StockQuote
 import app.tick.stock.StockQuoteProvider
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.data.redis.RedisConnectionFailureException
+import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
 import org.springframework.web.client.body
 import java.net.http.HttpClient
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
 @ConfigurationProperties(prefix = "tick.stock-quote.yahoo")
@@ -47,7 +51,13 @@ class YahooStockQuoteConfig
  * - 응답: chart.result[0].meta.regularMarketPrice / chartPreviousClose / regularMarketVolume
  *         + chart.result[0].timestamp[] + chart.result[0].indicators.quote[0].{open,high,low,close,volume}[]
  * - 현재가는 15분 지연. 모의투자 학습용엔 충분.
- * - in-memory ConcurrentHashMap + TTL 캐시. Yahoo rate limit 보호 + 응답 안정성.
+ *
+ * 캐싱:
+ * - Redis 에 JSON 직렬화 + EXPIRE TTL. 다중 backend 인스턴스 공유, 재시작에도 보존.
+ * - key: `stock:quote:{symbol}` (TTL 30s), `stock:series:{symbol}:{days}` (TTL 1h)
+ * - Redis 다운 시에는 캐시 우회 후 매번 Yahoo 직접 호출 (graceful — fail-open).
+ *
+ * Fallback:
  * - Yahoo 실패 시 [StockPriceGenerator] (mulberry32) 로 graceful fallback. 도메인 호출이 끊기지 않게.
  *
  * 활성화 토글: `tick.stock-quote.provider=yahoo` (기본 yahoo). `mulberry` 면 본 bean 비활성 →
@@ -60,6 +70,8 @@ class YahooStockQuoteAdapter(
     private val properties: YahooStockQuoteProperties,
     private val stockMasterRepository: StockMasterRepository,
     private val stockPriceGenerator: StockPriceGenerator,
+    private val redisTemplate: StringRedisTemplate,
+    private val objectMapper: ObjectMapper,
 ) : StockQuoteProvider {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -72,12 +84,12 @@ class YahooStockQuoteAdapter(
         .defaultHeader("User-Agent", "Mozilla/5.0 (compatible; Tick/1.0; +https://tickk.dev)")
         .build()
 
-    private val quoteCache = ConcurrentHashMap<String, CacheEntry<StockQuote>>()
-    private val seriesCache = ConcurrentHashMap<String, CacheEntry<List<StockPricePoint>>>()
     private val seoul: ZoneId = ZoneId.of("Asia/Seoul")
+    private val seriesTypeRef = object : TypeReference<List<StockPricePoint>>() {}
 
     override fun quote(symbol: String): StockQuote? {
-        cached(quoteCache, symbol, properties.quoteTtlSec)?.let { return it }
+        val cacheKey = "$QUOTE_KEY_PREFIX$symbol"
+        cacheGet(cacheKey, StockQuote::class.java)?.let { return it }
 
         val master = stockMasterRepository.findById(symbol).orElse(null) ?: return null
         val ticker = toYahooTicker(master)
@@ -90,7 +102,7 @@ class YahooStockQuoteAdapter(
                 ?: error("Yahoo returned empty body")
             val quote = response.toStockQuote(symbol)
                 ?: return fallbackQuote(master, "Yahoo response missing required fields")
-            quoteCache[symbol] = CacheEntry(quote, Instant.now())
+            cachePut(cacheKey, quote, Duration.ofSeconds(properties.quoteTtlSec))
             quote
         } catch (e: RestClientException) {
             fallbackQuote(master, "Yahoo call failed: ${e.message}")
@@ -100,8 +112,8 @@ class YahooStockQuoteAdapter(
     }
 
     override fun priceSeries(symbol: String, days: Int): List<StockPricePoint> {
-        val key = "$symbol:$days"
-        cached(seriesCache, key, properties.seriesTtlSec)?.let { return it }
+        val cacheKey = "$SERIES_KEY_PREFIX$symbol:$days"
+        cacheGetList(cacheKey, seriesTypeRef)?.let { return it }
 
         val master = stockMasterRepository.findById(symbol).orElse(null) ?: return emptyList()
         val ticker = toYahooTicker(master)
@@ -114,12 +126,42 @@ class YahooStockQuoteAdapter(
                 ?: error("Yahoo returned empty body")
             val points = response.toPricePoints(seoul)
             if (points.isEmpty()) return fallbackSeries(master, days, "Yahoo returned no chart points")
-            seriesCache[key] = CacheEntry(points, Instant.now())
+            cachePut(cacheKey, points, Duration.ofSeconds(properties.seriesTtlSec))
             points
         } catch (e: RestClientException) {
             fallbackSeries(master, days, "Yahoo call failed: ${e.message}")
         } catch (e: IllegalStateException) {
             fallbackSeries(master, days, e.message ?: "Yahoo response error")
+        }
+    }
+
+    private fun <T> cacheGet(key: String, type: Class<T>): T? = try {
+        redisTemplate.opsForValue().get(key)?.let { objectMapper.readValue(it, type) }
+    } catch (e: RedisConnectionFailureException) {
+        log.debug("redis down on get key={} ({}). falling through to Yahoo.", key, e.message)
+        null
+    } catch (e: Exception) {
+        log.warn("redis get failed key={} err={}. falling through.", key, e.message)
+        null
+    }
+
+    private fun <T> cacheGetList(key: String, type: TypeReference<T>): T? = try {
+        redisTemplate.opsForValue().get(key)?.let { objectMapper.readValue(it, type) }
+    } catch (e: RedisConnectionFailureException) {
+        log.debug("redis down on get key={} ({}). falling through to Yahoo.", key, e.message)
+        null
+    } catch (e: Exception) {
+        log.warn("redis get failed key={} err={}. falling through.", key, e.message)
+        null
+    }
+
+    private fun cachePut(key: String, value: Any, ttl: Duration) {
+        try {
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(value), ttl)
+        } catch (e: RedisConnectionFailureException) {
+            log.debug("redis down on set key={} ({}). skipping cache.", key, e.message)
+        } catch (e: Exception) {
+            log.warn("redis set failed key={} err={}", key, e.message)
         }
     }
 
@@ -153,16 +195,10 @@ class YahooStockQuoteAdapter(
         else -> "${master.symbol}.KS"
     }
 
-    private fun <V> cached(cache: ConcurrentHashMap<String, CacheEntry<V>>, key: String, ttlSec: Long): V? {
-        val entry = cache[key] ?: return null
-        if (entry.cachedAt.plusSeconds(ttlSec).isBefore(Instant.now())) {
-            cache.remove(key)
-            return null
-        }
-        return entry.value
+    companion object {
+        private const val QUOTE_KEY_PREFIX = "stock:quote:"
+        private const val SERIES_KEY_PREFIX = "stock:series:"
     }
-
-    private data class CacheEntry<V>(val value: V, val cachedAt: Instant)
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private data class YahooChartResponse(val chart: YahooChart) {
