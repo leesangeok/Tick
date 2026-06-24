@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import {
   type AiSummaryResponse,
   fetchAiSummaryFromBrowser,
-} from "@/services/aiSummaryService";
+} from "@/services/aiSummaryClient";
 import { AiSummaryCard } from "./AiSummaryCard";
 
 type Props = {
