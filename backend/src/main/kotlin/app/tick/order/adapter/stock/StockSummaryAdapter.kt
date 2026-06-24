@@ -4,13 +4,13 @@ import app.tick.common.domain.Money
 import app.tick.common.domain.StockCode
 import app.tick.order.application.LoadStockSummaryPort
 import app.tick.stock.StockMasterRepository
-import app.tick.stock.StockPriceGenerator
+import app.tick.stock.StockQuoteProvider
 import org.springframework.stereotype.Component
 
 @Component
 class StockSummaryAdapter(
     private val stockMasterRepository: StockMasterRepository,
-    private val stockPriceGenerator: StockPriceGenerator,
+    private val stockQuoteProvider: StockQuoteProvider,
 ) : LoadStockSummaryPort {
 
     override fun exists(stockCode: StockCode): Boolean =
@@ -20,8 +20,7 @@ class StockSummaryAdapter(
         stockMasterRepository.findById(stockCode.value).map { it.name }.orElse(null)
 
     override fun currentPrice(stockCode: StockCode): Money? {
-        val master = stockMasterRepository.findById(stockCode.value).orElse(null) ?: return null
-        val series = stockPriceGenerator.generate(master.symbol, master.basePrice, 2)
-        return Money.ofInt(series.last().close)
+        val quote = stockQuoteProvider.quote(stockCode.value) ?: return null
+        return Money.ofInt(quote.currentPrice)
     }
 }

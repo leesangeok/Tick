@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class StockService(
     private val repository: StockMasterRepository,
-    private val generator: StockPriceGenerator,
+    private val quoteProvider: StockQuoteProvider,
 ) {
     fun listAll(): List<StockResponse> =
         repository.findAll().map(::toResponse)
@@ -16,8 +16,8 @@ class StockService(
         repository.findById(symbol).map(::toResponse).orElse(null)
 
     fun getPriceSeries(symbol: String, days: Int): List<PricePointResponse>? {
-        val master = repository.findById(symbol).orElse(null) ?: return null
-        return generator.generate(master.symbol, master.basePrice, days).map {
+        if (!repository.existsById(symbol)) return null
+        return quoteProvider.priceSeries(symbol, days).map {
             PricePointResponse(
                 timestamp = it.date.toString(),
                 open = it.open,
@@ -30,20 +30,16 @@ class StockService(
     }
 
     private fun toResponse(master: StockMaster): StockResponse {
-        val series = generator.generate(master.symbol, master.basePrice, 60)
-        val last = series.last()
-        val prev = series[series.size - 2]
-        val changeAmount = last.close - prev.close
-        val changeRate = if (prev.close != 0) changeAmount.toDouble() / prev.close * 100.0 else 0.0
+        val quote = quoteProvider.quote(master.symbol)
         return StockResponse(
             symbol = master.symbol,
             name = master.name,
             market = master.market,
             sector = master.sector,
-            currentPrice = last.close,
-            changeAmount = changeAmount,
-            changeRate = changeRate,
-            volume = last.volume,
+            currentPrice = quote?.currentPrice ?: master.basePrice,
+            changeAmount = quote?.changeAmount ?: 0,
+            changeRate = quote?.changeRate ?: 0.0,
+            volume = quote?.volume ?: 0L,
         )
     }
 }
