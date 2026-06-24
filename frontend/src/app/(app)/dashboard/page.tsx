@@ -2,12 +2,11 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { fetchPortfolio } from "@/services/portfolioService";
 import { fetchOrders } from "@/services/orderService";
-import { fetchAiSummary } from "@/services/aiSummaryService";
 import { mockDailyAssets } from "@/mocks/dailyAssets";
 import { DashboardKpis } from "@/components/dashboard/DashboardKpis";
 import { DailyAssetChart } from "@/components/dashboard/DailyAssetChart";
 import { DepositButton } from "@/components/account/DepositButton";
-import { AiSummaryCard } from "@/components/ai/AiSummaryCard";
+import { LazyAiSummary } from "@/components/ai/LazyAiSummary";
 import {
   formatCurrency,
   formatRelativeTime,
@@ -25,12 +24,10 @@ export default async function DashboardPage() {
   ]);
   const recentOrders = orders.slice(0, 4);
 
-  // 보유 종목 중 평가금액 1순위 종목의 AI 요약. LLM 비용 줄이려고 1개만.
+  // 보유 종목 중 평가금액 1순위 종목의 AI 요약을 client-side lazy 로 fetch.
+  // server component 에서 LLM 호출 (1.5~4s) 을 들고 있으면 페이지 SSR 이 차단됨.
   const topHolding = portfolio.holdings.length > 0
     ? [...portfolio.holdings].sort((a, b) => b.evaluationAmount - a.evaluationAmount)[0]
-    : null;
-  const featuredSummary = topHolding
-    ? await fetchAiSummary(topHolding.symbol).catch(() => null)
     : null;
 
   return (
@@ -90,22 +87,19 @@ export default async function DashboardPage() {
         </div>
 
         <div className="space-y-6">
-          {topHolding && featuredSummary ? (
-            <AiSummaryCard
+          {topHolding ? (
+            <LazyAiSummary
               symbol={topHolding.symbol}
               stockName={topHolding.name}
-              summary={featuredSummary}
               compact
             />
           ) : (
             <Card
-              title={topHolding ? `${topHolding.name} AI 분석` : "AI 분석"}
+              title="AI 분석"
               badge={<Sparkles className="h-3.5 w-3.5 text-gain" />}
             >
               <p className="p-4 text-sm text-muted-foreground">
-                {topHolding
-                  ? "AI 요약을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요."
-                  : "보유 종목이 없습니다. 종목을 매수하면 AI 분석을 확인할 수 있습니다."}
+                보유 종목이 없습니다. 종목을 매수하면 AI 분석을 확인할 수 있습니다.
               </p>
             </Card>
           )}

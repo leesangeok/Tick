@@ -2,11 +2,10 @@ import { notFound } from "next/navigation";
 import { Star } from "lucide-react";
 import { fetchPriceSeries, fetchStock } from "@/services/stockService";
 import { fetchAccount } from "@/services/accountService";
-import { fetchAiSummary } from "@/services/aiSummaryService";
 import { fetchRecentNews } from "@/services/newsService";
 import { OrderPanel } from "@/components/trading/OrderPanel";
 import { StockChart } from "@/components/stocks/StockChart";
-import { AiSummaryCard } from "@/components/ai/AiSummaryCard";
+import { LazyAiSummary } from "@/components/ai/LazyAiSummary";
 import {
   formatCurrency,
   formatRelativeTime,
@@ -23,11 +22,10 @@ type PageProps = {
 
 export default async function StockDetailPage({ params }: PageProps) {
   const { symbol } = await params;
-  const [stock, series, account, aiSummary, news] = await Promise.all([
+  const [stock, series, account, news] = await Promise.all([
     fetchStock(symbol),
     fetchPriceSeries(symbol, 60).catch(() => []),
     fetchAccount().catch(() => null),
-    fetchAiSummary(symbol).catch(() => null),
     fetchRecentNews(symbol, 10).catch(() => []),
   ]);
   if (!stock) notFound();
@@ -90,13 +88,7 @@ export default async function StockDetailPage({ params }: PageProps) {
             />
           </div>
 
-          {aiSummary && (
-            <AiSummaryCard
-              symbol={stock.symbol}
-              stockName={stock.name}
-              summary={aiSummary}
-            />
-          )}
+          <LazyAiSummary symbol={stock.symbol} stockName={stock.name} />
 
           {news.length > 0 && (
             <div className="rounded-lg border border-border bg-card">
