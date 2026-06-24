@@ -125,15 +125,55 @@ jobs:
           set -e
           cd /opt/tick
 
+          # Redis 서비스 + REDIS_HOST 환경변수를 compose.prod.yaml 에 override 로 주입.
+          # user_data.sh 가 처음 부팅 때만 실행되므로 추후 user_data 변경분이 반영 안 됨
+          # → 매 deploy 시 override 를 직접 작성해서 보장 (idempotent).
+          cat > compose.override.yaml <<'YAML'
+          services:
+            redis:
+              image: redis:7-alpine
+              container_name: tick-redis
+              restart: unless-stopped
+              healthcheck:
+                test: ["CMD", "redis-cli", "ping"]
+                interval: 10s
+                timeout: 3s
+                retries: 10
+            backend-a:
+              environment:
+                REDIS_HOST: redis
+                REDIS_PORT: "6379"
+              depends_on:
+                redis:
+                  condition: service_healthy
+            backend-b:
+              environment:
+                REDIS_HOST: redis
+                REDIS_PORT: "6379"
+              depends_on:
+                redis:
+                  condition: service_healthy
+            ai-server:
+              environment:
+                REDIS_HOST: redis
+                REDIS_PORT: "6379"
+              depends_on:
+                redis:
+                  condition: service_healthy
+          YAML
+
+          # redis 자체는 한 번만 띄움 (이미 떠있으면 noop).
+          docker compose -f compose.prod.yaml -f compose.override.yaml --env-file .env up -d redis
+
           aws ecr get-login-password --region REGION_PLACEHOLDER \
             | docker login --username AWS --password-stdin REGISTRY_PLACEHOLDER
 
-          docker compose -f compose.prod.yaml --env-file .env pull
+          docker compose -f compose.prod.yaml -f compose.override.yaml --env-file .env pull
 
           if [ "${BACKEND_CHANGED}" = "true" ]; then
             for svc in backend-a backend-b; do
               echo "::group::rolling $svc"
-              docker compose -f compose.prod.yaml --env-file .env up -d \
+              docker compose -f compose.prod.yaml -f compose.override.yaml --env-file .env up -d \
                 --no-deps --force-recreate "$svc"
 
               status="starting"
@@ -157,7 +197,7 @@ jobs:
 
           if [ "${AI_SERVER_CHANGED}" = "true" ]; then
             echo "::group::ai-server"
-            docker compose -f compose.prod.yaml --env-file .env up -d \
+            docker compose -f compose.prod.yaml -f compose.override.yaml --env-file .env up -d \
               --no-deps --force-recreate ai-server
 
             status="starting"
@@ -178,7 +218,7 @@ jobs:
             echo "::endgroup::"
           fi
 
-          docker compose -f compose.prod.yaml --env-file .env up -d \
+          docker compose -f compose.prod.yaml -f compose.override.yaml --env-file .env up -d \
             --no-deps caddy || true
           docker image prune -af --filter until=72h
           BASH
