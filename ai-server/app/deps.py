@@ -4,6 +4,8 @@ from functools import lru_cache
 
 from psycopg_pool import AsyncConnectionPool
 
+from app.adapters.cache.noop_summary_cache import NoOpSummaryCacheAdapter
+from app.adapters.cache.redis_summary_cache import RedisSummaryCacheAdapter
 from app.adapters.embedding.openai_embedding_adapter import OpenAiEmbeddingAdapter
 from app.adapters.llm.anthropic_claude_adapter import AnthropicClaudeAdapter
 from app.adapters.observability.langfuse_trace_adapter import LangfuseTraceAdapter
@@ -12,6 +14,7 @@ from app.adapters.retriever.pgvector_retriever_adapter import PgvectorNewsRetrie
 from app.application.use_cases.embed_news import EmbedNewsUseCase
 from app.application.use_cases.summarize_stock import SummarizeStockUseCase
 from app.config.settings import settings
+from app.ports.summary_cache_port import SummaryCachePort
 from app.ports.trace_port import TracePort
 
 
@@ -45,12 +48,21 @@ def _trace() -> TracePort:
     return NoOpTraceAdapter()
 
 
+@lru_cache(maxsize=1)
+def _cache() -> SummaryCachePort:
+    # Redis host 가 설정돼 있으면 Redis, 없으면 NoOp (cache miss only).
+    if settings.redis_host:
+        return RedisSummaryCacheAdapter()
+    return NoOpSummaryCacheAdapter()
+
+
 def get_summarize_stock_use_case() -> SummarizeStockUseCase:
     return SummarizeStockUseCase(
         embedding=_embedding(),
         retriever=_retriever(),
         llm=_llm(),
         trace=_trace(),
+        cache=_cache(),
     )
 
 
@@ -59,6 +71,7 @@ def get_embed_news_use_case() -> EmbedNewsUseCase:
         embedding=_embedding(),
         retriever=_retriever(),
         trace=_trace(),
+        cache=_cache(),
     )
 
 

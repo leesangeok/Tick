@@ -80,6 +80,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       POSTGRES_DSN: postgresql://tick:tick@postgres:5432/tick
       OPENAI_API_KEY: ${OPENAI_API_KEY}
@@ -87,6 +89,8 @@ services:
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
       LOG_LEVEL: INFO
     ports:
       - "8000:8000"
