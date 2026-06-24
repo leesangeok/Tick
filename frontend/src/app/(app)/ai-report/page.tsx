@@ -1,19 +1,13 @@
 import { Sparkles } from "lucide-react";
 import { fetchPortfolio } from "@/services/portfolioService";
-import { fetchAiSummary } from "@/services/aiSummaryService";
-import { AiSummaryCard } from "@/components/ai/AiSummaryCard";
+import { LazyAiSummary } from "@/components/ai/LazyAiSummary";
 
 export default async function AiReportPage() {
   const portfolio = await fetchPortfolio();
   const holdings = portfolio.holdings;
 
-  // 보유 종목 별 AI 요약을 병렬 fetch. ai-server (LLM) 호출이라 종목 수에 비례한 비용/지연.
-  const summaries = await Promise.all(
-    holdings.map(async (h) => ({
-      holding: h,
-      summary: await fetchAiSummary(h.symbol).catch(() => null),
-    })),
-  );
+  // 보유 종목별 AI 요약을 client-side lazy fetch 로 분리.
+  // 종목 수 × LLM 호출 시간이 SSR 을 차단하던 게 가장 큰 느림 원인이었음.
 
   return (
     <div className="space-y-6">
@@ -36,33 +30,14 @@ export default async function AiReportPage() {
         </div>
       ) : (
         <section className="grid gap-6 lg:grid-cols-2">
-          {summaries.map(({ holding, summary }) =>
-            summary ? (
-              <AiSummaryCard
-                key={holding.symbol}
-                symbol={holding.symbol}
-                stockName={holding.name}
-                summary={summary}
-                compact
-              />
-            ) : (
-              <div
-                key={holding.symbol}
-                className="rounded-lg border border-border bg-card p-6"
-              >
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-muted-foreground/60" />
-                  <h3 className="text-sm font-semibold">{holding.name}</h3>
-                  <span className="text-xs text-muted-foreground">
-                    {holding.symbol}
-                  </span>
-                </div>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  AI 요약을 가져오지 못했습니다. 종목 상세에서 다시 확인해 주세요.
-                </p>
-              </div>
-            ),
-          )}
+          {holdings.map((h) => (
+            <LazyAiSummary
+              key={h.symbol}
+              symbol={h.symbol}
+              stockName={h.name}
+              compact
+            />
+          ))}
         </section>
       )}
     </div>
