@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 5
     retrieval_days_window: int = 14
 
+    # Redis — summary 응답 캐시. host 비어있으면 NoOp 으로 자동 fallback.
+    redis_host: str = ""
+    redis_port: int = 6379
+    redis_password: str = ""
+    # summary 캐시 TTL (초). 짧으면 fresh, 길면 절감 큼. embed_news 시 자동 invalidate 됨.
+    summary_cache_ttl_sec: int = 900  # 15분
+
     log_level: str = "INFO"
 
 

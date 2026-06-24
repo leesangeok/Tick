@@ -125,6 +125,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     mem_limit: 512m
     environment:
       POSTGRES_DSN: postgresql://tick:$${POSTGRES_PASSWORD}@postgres:5432/tick
@@ -133,6 +135,8 @@ services:
       LANGFUSE_PUBLIC_KEY: $${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: $${LANGFUSE_SECRET_KEY}
       LANGFUSE_HOST: $${LANGFUSE_HOST}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
       LOG_LEVEL: INFO
 
   caddy:

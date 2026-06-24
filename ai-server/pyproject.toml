@@ -22,6 +22,8 @@ dependencies = [
     "httpx>=0.28",
     # Langfuse — LLM 트레이싱
     "langfuse>=3.0",
+    # Redis async — summary 응답 캐시 (LLM 호출 비용 절감)
+    "redis>=5.0",
 ]
 
 [tool.uv]
