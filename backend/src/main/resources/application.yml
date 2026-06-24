@@ -82,3 +82,10 @@ tick:
       base-url: ${YAHOO_FINANCE_BASE_URL:https://query1.finance.yahoo.com}
       quote-ttl-sec: ${YAHOO_QUOTE_TTL_SEC:30}
       series-ttl-sec: ${YAHOO_SERIES_TTL_SEC:3600}
+
+spring.data.redis:
+  host: ${REDIS_HOST:localhost}
+  port: ${REDIS_PORT:6379}
+  # password 가 비어있으면 인증 안 함. prod 환경은 SSM 으로 주입.
+  password: ${REDIS_PASSWORD:}
+  timeout: 2000ms
