@@ -37,9 +37,12 @@ dependencies {
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("io.mockk:mockk:1.13.13")
+	testImplementation("org.testcontainers:junit-jupiter")
+	testImplementation("org.testcontainers:postgresql")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -57,4 +60,8 @@ allOpen {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	// Testcontainers 가 shade 한 docker-java 의 기본 API 버전이 1.32 인데,
+	// 최신 Docker daemon (29.x / OrbStack) 은 MinAPIVersion=1.40 이라 1.32 요청을 거부한다.
+	// DefaultDockerClientConfig.API_VERSION 이 읽는 system property 로 1.43 강제.
+	systemProperty("api.version", "1.43")
 }

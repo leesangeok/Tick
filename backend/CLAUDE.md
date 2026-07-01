@@ -159,7 +159,7 @@ Spring Initializr 가 AGENTS.md 를 생성하지 않으므로 (Next.js 만), 버
 | 외부 연동 | ✅ 네이버 검색 API (뉴스), ai-server (OpenAI/Anthropic) | — | 실시간 시세 API (한투/키움) |
 | 통신 | REST | WebSocket/SSE (실시간 시세) | Kafka stream |
 | API prefix | ✅ `/api/v1/*` | — | — |
-| 테스트 | MockK 의존성 등록됨, 테스트 코드 부재 | 핵심 도메인 단위/통합 테스트 작성, Testcontainers 도입 | Contract test |
+| 테스트 | ✅ 핵심 VO/Account/Holding/Order 단위 테스트 + Testcontainers (pgvector + Redis) 통한 `@SpringBootTest` 컨텍스트 로드 | 도메인 커버리지 확대 (Watchlist, News, AI), Application 계층 통합 테스트 | Contract test |
 | 관찰성 | Actuator health/info, ai-server 는 Langfuse 트레이스 | 구조화 로그, backend 측 Micrometer | OpenTelemetry 분산 트레이싱 |
 
 본 문서에서 **Phase 4** 로 표시된 섹션 중 아직 미진 영역(Kafka, Redis, WebSocket) 은 가이드만 제공하며 현재 코드엔 미적용. 도입 시점에 본 섹션의 규칙을 적용한다.
