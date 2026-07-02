@@ -1,0 +1,45 @@
+name: RAG Eval Regression Guard
+
+# 목적: LLM 요약 품질이 갑자기 하락 (groundedness 떨어짐 / hallucination 증가) 했는지
+# PR 단계에서 자동 차단. 개발자가 로컬에서 evals/run_eval.py 를 돌려 결과 JSON 을
+# ai-server/evals/results/ 에 커밋하면 이 workflow 가 baseline vs current 를 비교.
+#
+# LLM 재실행은 하지 않는다 — 그 부분은 로컬에서 하고 이곳은 결과 비교만. LLM 호출 0회.
+
+on:
+  pull_request:
+    paths:
+      - 'ai-server/evals/**'
+      - 'ai-server/app/application/prompts/**'
+      - 'ai-server/app/adapters/llm/**'
+      - 'ai-server/app/application/use_cases/summarize_stock.py'
+  workflow_dispatch:
+    inputs:
+      min_groundedness:
+        description: 'minimum groundedness_mean threshold'
+        default: '0.65'
+      max_hallucination_sum:
+        description: 'maximum hallucination_count_sum threshold'
+        default: '15'
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: List eval results
+        run: ls -la evals/results/ || echo "(no results yet)"
+      - name: Regression check
+        run: |
+          python -m evals.check_regression \
+            --min-groundedness "${{ github.event.inputs.min_groundedness || '0.65' }}" \
+            --max-hallucination-sum "${{ github.event.inputs.max_hallucination_sum || '15' }}"
