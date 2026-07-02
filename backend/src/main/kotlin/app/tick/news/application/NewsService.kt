@@ -1,6 +1,7 @@
 package app.tick.news.application
 
 import app.tick.common.domain.StockCode
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.ZoneId
@@ -8,22 +9,43 @@ import java.time.format.DateTimeFormatter
 
 @Service
 class NewsService(
-    private val collector: NewsCollectorPort,
+    /**
+     * 등록된 모든 collector (네이버 / DART 등) 를 순회. 한 소스가 실패해도 다른 소스는 정상 진행.
+     * disabled 어댑터는 자체적으로 emptyList 를 반환하는 게 규약.
+     */
+    private val collectors: List<NewsCollectorPort>,
     private val loadNews: LoadNewsPort,
     private val saveNews: SaveNewsPort,
 ) : CollectNewsForSymbolUseCase, GetRecentNewsUseCase {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     override fun collect(stockCode: StockCode, limit: Int): CollectResult {
-        val fetched = collector.search(stockCode, limit)
-        var saved = 0
-        fetched.forEach { news ->
-            if (!loadNews.existsByContentHash(news.contentHash)) {
-                saveNews.save(news)
-                saved++
+        var totalFetched = 0
+        var totalSaved = 0
+        for (collector in collectors) {
+            val name = collector.javaClass.simpleName
+            val fetched = try {
+                collector.search(stockCode, limit)
+            } catch (e: Exception) {
+                log.warn("collector {} failed for {}: {}", name, stockCode.value, e.message)
+                emptyList()
             }
+            var savedThisSource = 0
+            fetched.forEach { news ->
+                if (!loadNews.existsByContentHash(news.contentHash)) {
+                    saveNews.save(news)
+                    savedThisSource++
+                }
+            }
+            totalFetched += fetched.size
+            totalSaved += savedThisSource
+            log.info(
+                "news collect symbol={} collector={} fetched={} saved={}",
+                stockCode.value, name, fetched.size, savedThisSource,
+            )
         }
-        return CollectResult(fetched = fetched.size, saved = saved)
+        return CollectResult(fetched = totalFetched, saved = totalSaved)
     }
 
     @Transactional(readOnly = true)
