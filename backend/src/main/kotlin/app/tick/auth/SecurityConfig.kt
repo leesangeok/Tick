@@ -38,6 +38,9 @@ class SecurityConfig(
                         "/api/v1/auth/**",
                         "/api/v1/stocks",
                         "/api/v1/stocks/**",
+                        // /ws/market: 실시간 시세는 유저별 데이터 아니라 public 허용.
+                        // 프론트가 종목 상세 페이지에서 로그인 없이도 시세를 봐야 함.
+                        "/ws/market",
                     ).permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/news/**").permitAll()
                     .anyRequest().authenticated()
