@@ -5,15 +5,9 @@ import { fetchAccount } from "@/services/accountService";
 import { fetchRecentNews } from "@/services/newsService";
 import { OrderPanel } from "@/components/trading/OrderPanel";
 import { StockChart } from "@/components/stocks/StockChart";
+import { RealtimePriceHeader } from "@/components/stocks/RealtimePriceHeader";
 import { LazyAiSummary } from "@/components/ai/LazyAiSummary";
-import {
-  formatCurrency,
-  formatRelativeTime,
-  formatSignedCurrency,
-  formatSignedPercent,
-  priceArrow,
-  priceDirectionClass,
-} from "@/lib/format";
+import { formatCurrency, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type PageProps = {
@@ -56,20 +50,12 @@ export default async function StockDetailPage({ params }: PageProps) {
             {stock.symbol} · {stock.market} · {stock.sector}
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-3xl font-bold tabular-nums">
-            {formatCurrency(stock.currentPrice)}
-          </p>
-          <p
-            className={cn(
-              "mt-1 text-sm font-medium tabular-nums",
-              priceDirectionClass(stock.changeAmount),
-            )}
-          >
-            {priceArrow(stock.changeAmount)}{" "}
-            {formatSignedCurrency(stock.changeAmount)} ({formatSignedPercent(stock.changeRate)})
-          </p>
-        </div>
+        <RealtimePriceHeader
+          symbol={stock.symbol}
+          initialPrice={stock.currentPrice}
+          initialChangeAmount={stock.changeAmount}
+          initialChangeRate={stock.changeRate}
+        />
       </header>
 
       <section className="grid gap-6 lg:grid-cols-3">
