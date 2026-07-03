@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     # RAG
     retrieval_top_k: int = 5
     retrieval_days_window: int = 14
+    # hybrid 검색에서 dense/sparse 각각의 초기 후보 개수. rerank 는 이걸 병합해 top_k 로 좁힌다.
+    retrieval_initial_k: int = 20
+
+    # Cohere Rerank — 비면 rerank 스킵 (RRF 순위 그대로 사용).
+    cohere_api_key: str = ""
+    cohere_rerank_model: str = "rerank-v3.5"
 
     # Redis — summary 응답 캐시. host 비어있으면 NoOp 으로 자동 fallback.
     redis_host: str = ""

@@ -60,6 +60,7 @@ class SummarizeStockUseCase:
                     embedding=query_embedding,
                     top_k=settings.retrieval_top_k,
                     days_window=settings.retrieval_days_window,
+                    raw_query_text=query_text,
                 )
             )
 

@@ -81,7 +81,13 @@ async def evaluate_one(
     query_text = f"{item.stock_name}({item.symbol}) 주가 변동 이유 실적 뉴스"
     qvec = await embedding.embed(query_text)
     news = await retriever.retrieve(
-        RetrievalQuery(symbol=symbol, embedding=qvec, top_k=top_k, days_window=days_window)
+        RetrievalQuery(
+            symbol=symbol,
+            embedding=qvec,
+            top_k=top_k,
+            days_window=days_window,
+            raw_query_text=query_text,
+        )
     )
 
     breakdown: dict[str, int] = {}

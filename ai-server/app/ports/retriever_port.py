@@ -11,6 +11,8 @@ class RetrievalQuery:
     embedding: list[float]
     top_k: int
     days_window: int
+    # sparse retrieval + reranker 용 원본 쿼리 텍스트. dense 만 쓰던 시절엔 필요 없었음.
+    raw_query_text: str = ""
 
 
 class NewsRetrieverPort(Protocol):
