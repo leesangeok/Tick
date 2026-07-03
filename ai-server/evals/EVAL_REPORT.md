@@ -39,21 +39,21 @@ python -m evals.check_regression
 
 각 단계는 **retriever 변경 없이 소스만 늘리는 것 (1→2)** 과 **retriever 자체를 바꾸는 것 (2→3, 3→4)** 로 구분된다.
 
-| 지표 | 1. Baseline (Naver, dense only) | 2. +DART (dense) | 3. **+Hybrid (Dense+Sparse+RRF)** | 4. +Hybrid+Rerank (Cohere v3.5) |
-|---|---|---|---|---|
-| `groundedness_mean` | 0.883 | 0.841 | **0.908** ⭐ | 0.866 |
-| `citation_accuracy_mean` | 0.900 | 0.847 | **0.921** ⭐ | 0.873 |
-| **`hallucination_count_sum`** | **8** | 6 | **4 (-50%)** ⭐ | 7 |
-| `coverage_mean` | 0.805 | 0.770 | **0.851** ⭐ | 0.783 |
-| `count_no_news` | 0 | 0 | 0 | 0 |
+| 지표 | 1. Baseline (Naver, dense) | 2. +DART (dense) | 3. **+Hybrid (Dense+Sparse+RRF)** | 4. +Hybrid+Rerank (Cohere v3.5) | 5. +Hybrid + Judge×3 median |
+|---|---|---|---|---|---|
+| `groundedness_mean` | 0.883 | 0.841 | **0.908** ⭐ | 0.866 | 0.889 |
+| `citation_accuracy_mean` | 0.900 | 0.847 | **0.921** ⭐ | 0.873 | 0.894 |
+| **`hallucination_count_sum`** | **8** | 6 | **4 (-50%)** ⭐ | 7 | 7 |
+| `coverage_mean` | 0.805 | 0.770 | **0.851** ⭐ | 0.783 | 0.821 |
+| `count_no_news` | 0 | 0 | 0 | 0 | 0 |
 
 ### Tier 별 세부 (grounded_mean / halluc_sum)
 
-| Tier | 1. Baseline | 2. +DART | 3. **+Hybrid** | 4. +Rerank |
-|---|---|---|---|---|
-| large (n=8) | 0.866 / 5 | 0.899 / 3 | **0.901 / 2** | 0.848 / 4 |
-| mid (n=4) | 0.917 / 2 | 0.680 / 1 (outlier) | **0.927 / 1** | 0.905 / 1 |
-| kosdaq (n=3) | 0.883 / 1 | 0.903 / 2 | **0.900 / 1** | 0.863 / 2 |
+| Tier | 1. Baseline | 2. +DART | 3. **+Hybrid** | 4. +Rerank | 5. +Judge×3 median |
+|---|---|---|---|---|---|
+| large (n=8) | 0.866 / 5 | 0.899 / 3 | **0.901 / 2** | 0.848 / 4 | 0.899 / 3 |
+| mid (n=4) | 0.917 / 2 | 0.680 / 1 (outlier) | **0.927 / 1** | 0.905 / 1 | 0.890 / 2 |
+| kosdaq (n=3) | 0.883 / 1 | 0.903 / 2 | **0.900 / 1** | 0.863 / 2 | 0.860 / 2 |
 
 `check_regression.py` 결과: **PASS** — current(rerank) 도 baseline 대비 halluc 8→7 감소, groundedness drop 0.017 tolerance 내.
 
@@ -73,16 +73,21 @@ python -m evals.check_regression
 
 **3 → 4 (+Cohere Rerank v3.5)**: **오히려 후퇴**. groundedness 0.908→0.866, halluc 4→7. NAVER (0.95→0.5, halluc 0→2), 알테오젠 (0.92→0.82), 에코프로비엠 (0.9→0.85) 에서 큰 후퇴. 원인 추정: general-purpose reranker 가 한국 주식 도메인의 고유명사/사업부명 매칭에 domain 지식이 없어 오히려 소음을 upvote. large tier 가 특히 후퇴 (0.901/2 → 0.848/4). **"최신 기법 = 정답" 이 아님을 domain eval 로 계량**.
 
+**Hybrid 상태에서 3 → 5 (+Judge×3 median)**: 3회 병렬 판정 후 지표별 median (settings.judge_repeat=3). **삼성바이오 outlier (`grounded=0.0`) 재발 완전 방지** — mid tier 가 0.917→0.680(outlier)→0.927(hybrid)→**0.890** 로 안정. `grounded=0.0` 사례 0건. 그러나 전체 mean 은 hybrid-single 대비 -0.019 로 오히려 미세 후퇴 — NAVER 는 hybrid-single 0.95 → judge×3 median 0.82. Judge (Sonnet 4.6) 가 같은 입력에도 개별 판정마다 편차가 큰 케이스가 median 3개로도 완전히 안 잡힘. **Median 이 outlier 는 막지만 stochasticity 근본 해결은 아님을 계량**. (뉴스 셋이 실시간 유입이라 fair 비교 아닌 부분도 있음 — 다음 iteration 에서 fixed 골든셋 dump 도입 예정.)
+
 ## 다음 iteration 방향 (관찰에서 자연스레 나오는)
 
 1. Reranker 를 domain fine-tunable 로 교체 — 로컬 BGE-reranker-v2-m3 + 한국 주식 뉴스 pair 로 소량 fine-tune
 2. LLM listwise rerank (Claude Sonnet 자체를 reranker 로) 로 비교 실험
 3. 공시 소음 whitelist ("임원", "주요주주", "특정증권" 접두 컷) 를 sparse 인덱싱 전 필터로 반영
-4. Judge stochasticity 완화 — 종목당 judge 3회 실행 + median 사용
+4. **Judge stochasticity 완화 심화** — 판정 3회 median 만으로는 근본 해결 X 를 확인. 다음:
+   - 판정마다 표준편차 저장 → σ 큰 종목만 자동 재판정 (5~7회)
+   - 골든셋 뉴스 스냅샷 dump 로 실행간 fair 비교 보장
+   - 판정 rubric 을 더 딱딱하게 (예: hallucination_examples 없으면 halluc_count=0 강제)
 
 ## 이력서/포트폴리오용 한 줄
 
-> LLM RAG 요약 파이프라인 품질 회귀 방지를 위해 **LLM-as-a-judge (Claude Sonnet 4.6)** 기반 evals 파이프라인 설계. 골든셋 15종목 × tier 별 4개 지표를 계량화하며 **4단계 iteration** (Naver → +DART → +Hybrid Dense+Sparse+RRF → +Cohere Rerank) 를 실측. **Hybrid retrieval 조합에서 hallucination 8→4 (50% ↓), groundedness 0.883→0.908** 로 최고 점수 달성. Cohere Rerank v3.5 추가 시 오히려 후퇴 (halluc 4→7) 하는 결과로 **general-purpose reranker 의 domain 한계를 계량화**, 다음 iteration 방향 (domain-tuned BGE / LLM listwise rerank) 을 데이터 기반으로 도출. GitHub Actions 회귀 게이트로 재발 자동 차단.
+> LLM RAG 요약 파이프라인 품질 회귀 방지를 위해 **LLM-as-a-judge (Claude Sonnet 4.6, 3회 median)** 기반 evals 파이프라인 설계. 골든셋 15종목 × tier 별 4개 지표를 계량화하며 **5단계 iteration** (Naver → +DART → +Hybrid Dense+Sparse+RRF → +Cohere Rerank → +Judge×3 median) 을 실측. **Hybrid retrieval 조합에서 hallucination 8→4 (50% ↓), groundedness 0.883→0.908** 로 최고 점수 달성. Cohere Rerank v3.5 는 오히려 후퇴 (halluc 4→7) 하여 **general-purpose reranker 의 domain 한계를 계량**. Judge×3 median 은 **삼성바이오 outlier (`grounded=0.0`) 재발 완전 방지**했지만 전체 mean 은 미세 후퇴 — median 이 outlier 는 막지만 판정 편차 근본 원인 (σ) 은 남는다는 것도 데이터로 도출. GitHub Actions 회귀 게이트로 재발 자동 차단.
 
 ## 관찰
 

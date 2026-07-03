@@ -199,7 +199,8 @@ async def main() -> None:
     items = load_golden(args.golden)
     print(
         f"[eval] {len(items)} items | label={args.label} | top_k={args.top_k} | "
-        f"days_window={args.days_window} | llm={settings.anthropic_model} | judge={JUDGE_MODEL}"
+        f"days_window={args.days_window} | llm={settings.anthropic_model} | "
+        f"judge={JUDGE_MODEL} x{settings.judge_repeat}"
     )
 
     await open_pool()

@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     cohere_api_key: str = ""
     cohere_rerank_model: str = "rerank-v3.5"
 
+    # LLM-as-a-judge 를 N회 병렬 호출해 지표별 median 을 사용. 홀수 권장.
+    # 1 이면 단일 호출 (하위호환). 3 이면 outlier 완화 + 비용 3배.
+    judge_repeat: int = 3
+
     # Redis — summary 응답 캐시. host 비어있으면 NoOp 으로 자동 fallback.
     redis_host: str = ""
     redis_port: int = 6379

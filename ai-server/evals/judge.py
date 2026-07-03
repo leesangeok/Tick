@@ -1,9 +1,15 @@
 """LLM-as-a-judge — Claude Sonnet 이 요약을 뉴스 근거 기준으로 채점.
 
 Summary 생성 모델(Haiku)과 다른 (더 큰) 모델을 쓰는 게 정석. Sonnet 4.6 사용.
+
+Stochasticity 완화: 같은 입력에도 판정이 흔들리는 걸 (특히 삼성바이오처럼 `grounded=0.0`
+outlier) 완화하기 위해 N회 병렬 호출 후 지표별 median 을 반환한다 (n=settings.judge_repeat).
+Hallucination_examples 는 union, notes 는 median-of-N 명시.
 """
 
+import asyncio
 import json
+import statistics
 from typing import Any
 
 from anthropic import AsyncAnthropic
@@ -49,6 +55,40 @@ async def judge_summary(
     news: list[RetrievedNews],
     expected_topics: list[str] | None = None,
     known_traps: list[str] | None = None,
+    repeats: int | None = None,
+) -> JudgeVerdict:
+    n = repeats if repeats is not None else settings.judge_repeat
+    if n <= 1:
+        return await _judge_once(
+            symbol, stock_name, summary, key_reasons, risk_notes, news, expected_topics, known_traps
+        )
+    verdicts = await asyncio.gather(
+        *[
+            _judge_once(
+                symbol,
+                stock_name,
+                summary,
+                key_reasons,
+                risk_notes,
+                news,
+                expected_topics,
+                known_traps,
+            )
+            for _ in range(n)
+        ]
+    )
+    return _aggregate(verdicts, n)
+
+
+async def _judge_once(
+    symbol: str,
+    stock_name: str,
+    summary: str,
+    key_reasons: list[str],
+    risk_notes: list[str],
+    news: list[RetrievedNews],
+    expected_topics: list[str] | None,
+    known_traps: list[str] | None,
 ) -> JudgeVerdict:
     client = AsyncAnthropic(api_key=settings.anthropic_api_key)
     prompt = _build_prompt(
@@ -69,6 +109,32 @@ async def judge_summary(
         hallucination_examples=[str(x) for x in parsed.get("hallucination_examples", [])],
         coverage=_clamp01(parsed.get("coverage", 0.0)),
         notes=str(parsed.get("notes", "")),
+    )
+
+
+def _aggregate(verdicts: list[JudgeVerdict], n: int) -> JudgeVerdict:
+    """N 판정의 지표별 median. examples 는 dedup union, notes 는 median 태그 + 첫 판정 notes."""
+    grounded = [v.groundedness for v in verdicts]
+    cite = [v.citation_accuracy for v in verdicts]
+    halluc = [v.hallucination_count for v in verdicts]
+    cov = [v.coverage for v in verdicts]
+
+    seen: set[str] = set()
+    examples: list[str] = []
+    for v in verdicts:
+        for e in v.hallucination_examples:
+            if e not in seen:
+                seen.add(e)
+                examples.append(e)
+
+    head_notes = verdicts[0].notes if verdicts and verdicts[0].notes else ""
+    return JudgeVerdict(
+        groundedness=round(statistics.median(grounded), 3),
+        citation_accuracy=round(statistics.median(cite), 3),
+        hallucination_count=int(statistics.median(halluc)),
+        hallucination_examples=examples,
+        coverage=round(statistics.median(cov), 3),
+        notes=f"median of {n} judges | {head_notes}".strip(" |"),
     )
 
 
