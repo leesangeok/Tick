@@ -96,6 +96,8 @@ class PgvectorNewsRetrieverAdapter:
             body=row[2],
             source=row[3],
             source_url=row[4],
-            published_at=row[5] if isinstance(row[5], datetime) else datetime.fromisoformat(str(row[5])),
+            published_at=(
+                row[5] if isinstance(row[5], datetime) else datetime.fromisoformat(str(row[5]))
+            ),
             score=float(row[6]),
         )

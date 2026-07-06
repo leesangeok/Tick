@@ -7,7 +7,8 @@ Usage:
 
 결과: evals/results/YYYY-MM-DD_<label>.json
 
-env: OPENAI_API_KEY, ANTHROPIC_API_KEY, POSTGRES_DSN 필수. 백엔드가 뉴스를 이미 embed 해둔 상태여야 한다.
+env: OPENAI_API_KEY, ANTHROPIC_API_KEY, POSTGRES_DSN 필수.
+백엔드가 뉴스를 이미 embed 해둔 상태여야 한다.
 """
 
 import argparse
@@ -20,6 +21,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from app.config.settings import settings
+
 # deps.py 는 lru_cache 로 embedding/retriever/llm 을 노출. eval 은 내부 도구라 private 참조 허용.
 from app.deps import (
     _embedding,
@@ -29,7 +32,6 @@ from app.deps import (
     flush_langfuse,
     open_pool,
 )
-from app.config.settings import settings
 from app.domain.value_objects.stock_symbol import StockSymbol
 from app.ports.retriever_port import RetrievalQuery
 from evals import schemas
@@ -216,7 +218,10 @@ async def main() -> None:
     records: list[schemas.EvalRecord] = []
     try:
         for i, item in enumerate(items, 1):
-            print(f"  [{i}/{len(items)}] {item.symbol} {item.stock_name} ({item.tier})...", flush=True)
+            print(
+                f"  [{i}/{len(items)}] {item.symbol} {item.stock_name} ({item.tier})...",
+                flush=True,
+            )
             rec = await evaluate_one(item, args.top_k, args.days_window)
             records.append(rec)
             if rec.judge is not None:

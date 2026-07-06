@@ -105,7 +105,10 @@ async def close_pool() -> None:
 
 
 def flush_langfuse() -> None:
-    """Shutdown 시 큐에 남은 trace 를 flush. CLAUDE.md '스크립트에서 flush() 없으면 trace 안 감' 가드."""
+    """Shutdown 시 큐에 남은 trace 를 flush.
+
+    CLAUDE.md '스크립트에서 flush() 없으면 trace 안 감' 가드.
+    """
     if settings.langfuse_public_key and settings.langfuse_secret_key:
         try:
             from langfuse import get_client

@@ -13,7 +13,7 @@ router = APIRouter()
 @router.post("/ai/embeddings/{symbol}", response_model=EmbedResponse)
 async def post_embeddings(
     symbol: str,
-    use_case: EmbedNewsUseCase = Depends(get_embed_news_use_case),
+    use_case: EmbedNewsUseCase = Depends(get_embed_news_use_case),  # noqa: B008
 ) -> EmbedResponse:
     if not settings.openai_api_key:
         raise HTTPException(status_code=503, detail="openai key not configured")
