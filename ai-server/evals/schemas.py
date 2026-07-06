@@ -20,6 +20,11 @@ class JudgeVerdict:
     hallucination_examples: list[str]
     coverage: float
     notes: str
+    # 판정 안정성 메트릭 — 단일 호출 (judge_runs=1) 이면 std 는 0.0.
+    judge_runs: int = 1
+    groundedness_std: float = 0.0
+    hallucination_count_std: float = 0.0
+    retry_triggered: bool = False
 
 
 @dataclass

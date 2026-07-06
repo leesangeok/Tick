@@ -57,27 +57,38 @@ async def judge_summary(
     known_traps: list[str] | None = None,
     repeats: int | None = None,
 ) -> JudgeVerdict:
+    """N회 병렬 판정 후 지표별 median. 판정 편차 (σ) 가 크면 자동으로 extras 회 추가 판정.
+
+    Sonnet 4.6 이 같은 입력에도 개별 판정에 상당한 stochasticity 를 보이는 케이스가
+    있어 3회 median 만으로는 완전 해결되지 않는다 (NAVER 등). σ 큰 종목만 선택적으로
+    재판정하는 게 전체 비용은 유지하면서 안정성을 확보하는 실무적 접근.
+    """
     n = repeats if repeats is not None else settings.judge_repeat
-    if n <= 1:
-        return await _judge_once(
-            symbol, stock_name, summary, key_reasons, risk_notes, news, expected_topics, known_traps
-        )
-    verdicts = await asyncio.gather(
-        *[
-            _judge_once(
-                symbol,
-                stock_name,
-                summary,
-                key_reasons,
-                risk_notes,
-                news,
-                expected_topics,
-                known_traps,
-            )
-            for _ in range(n)
-        ]
+    args = (
+        symbol, stock_name, summary, key_reasons, risk_notes,
+        news, expected_topics, known_traps,
     )
-    return _aggregate(verdicts, n)
+    if n <= 1:
+        return await _judge_once(*args)
+
+    verdicts = await asyncio.gather(*[_judge_once(*args) for _ in range(n)])
+    initial = _aggregate(verdicts)
+
+    # 판정 편차 큰 경우 자동 재판정.
+    extras = settings.judge_retry_extras
+    if extras > 0 and _should_retry(initial):
+        more = await asyncio.gather(*[_judge_once(*args) for _ in range(extras)])
+        verdicts.extend(more)
+        retried = _aggregate(verdicts)
+        retried.retry_triggered = True
+        return retried
+    return initial
+
+
+def _should_retry(v: JudgeVerdict) -> bool:
+    gt = settings.judge_std_threshold_grounded
+    ht = settings.judge_std_threshold_halluc
+    return v.groundedness_std >= gt or v.hallucination_count_std >= ht
 
 
 async def _judge_once(
@@ -112,8 +123,9 @@ async def _judge_once(
     )
 
 
-def _aggregate(verdicts: list[JudgeVerdict], n: int) -> JudgeVerdict:
-    """N 판정의 지표별 median. examples 는 dedup union, notes 는 median 태그 + 첫 판정 notes."""
+def _aggregate(verdicts: list[JudgeVerdict]) -> JudgeVerdict:
+    """N 판정의 지표별 median + 편차. examples 는 dedup union, notes 는 median 태그 + 첫 판정 notes."""
+    n = len(verdicts)
     grounded = [v.groundedness for v in verdicts]
     cite = [v.citation_accuracy for v in verdicts]
     halluc = [v.hallucination_count for v in verdicts]
@@ -128,6 +140,8 @@ def _aggregate(verdicts: list[JudgeVerdict], n: int) -> JudgeVerdict:
                 examples.append(e)
 
     head_notes = verdicts[0].notes if verdicts and verdicts[0].notes else ""
+    g_std = round(statistics.pstdev(grounded), 3) if n > 1 else 0.0
+    h_std = round(statistics.pstdev(halluc), 3) if n > 1 else 0.0
     return JudgeVerdict(
         groundedness=round(statistics.median(grounded), 3),
         citation_accuracy=round(statistics.median(cite), 3),
@@ -135,6 +149,10 @@ def _aggregate(verdicts: list[JudgeVerdict], n: int) -> JudgeVerdict:
         hallucination_examples=examples,
         coverage=round(statistics.median(cov), 3),
         notes=f"median of {n} judges | {head_notes}".strip(" |"),
+        judge_runs=n,
+        groundedness_std=g_std,
+        hallucination_count_std=h_std,
+        retry_triggered=False,
     )
 
 

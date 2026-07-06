@@ -161,6 +161,14 @@ def aggregate(records: list[schemas.EvalRecord]) -> dict[str, Any]:
             "hallucination_count_sum": sum(r.judge.hallucination_count for r in judged),
             "hallucination_count_mean": mean(lambda r: r.judge.hallucination_count),
             "coverage_mean": mean(lambda r: r.judge.coverage),
+            # 판정 안정성 관측 — 재판정 트리거된 종목 수와 평균 판정 횟수.
+            "count_retried": sum(1 for r in judged if r.judge.retry_triggered),
+            "avg_judge_runs": round(
+                statistics.mean(r.judge.judge_runs for r in judged), 2
+            ),
+            "groundedness_std_mean": round(
+                statistics.mean(r.judge.groundedness_std for r in judged), 3
+            ),
         }
     )
 
@@ -213,10 +221,12 @@ async def main() -> None:
             records.append(rec)
             if rec.judge is not None:
                 j = rec.judge
+                retry_tag = " [RETRY]" if j.retry_triggered else ""
                 print(
                     f"    src={rec.source_count} breakdown={rec.source_breakdown} "
-                    f"grounded={j.groundedness} cite={j.citation_accuracy} "
-                    f"halluc={j.hallucination_count} cov={j.coverage}"
+                    f"grounded={j.groundedness}±{j.groundedness_std} "
+                    f"cite={j.citation_accuracy} halluc={j.hallucination_count} "
+                    f"cov={j.coverage} runs={j.judge_runs}{retry_tag}"
                 )
             elif rec.ok:
                 print("    (뉴스 0건 — judge 스킵)")
