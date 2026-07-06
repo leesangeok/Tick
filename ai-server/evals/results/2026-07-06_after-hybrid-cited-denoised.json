@@ -1,0 +1,669 @@
+{
+  "label": "after-hybrid-cited-denoised",
+  "started_at": "2026-07-06T13:12:03.080899+00:00",
+  "finished_at": "2026-07-06T13:14:32.762288+00:00",
+  "top_k": 5,
+  "days_window": 14,
+  "llm_model": "claude-haiku-4-5",
+  "judge_model": "claude-sonnet-4-6",
+  "aggregate": {
+    "count_total": 15,
+    "count_judged": 15,
+    "count_no_news": 0,
+    "count_error": 0,
+    "groundedness_mean": 0.919,
+    "citation_accuracy_mean": 0.925,
+    "hallucination_count_sum": 3,
+    "hallucination_count_mean": 0.2,
+    "coverage_mean": 0.822,
+    "count_retried": 0,
+    "avg_judge_runs": 3,
+    "groundedness_std_mean": 0.003,
+    "by_tier": {
+      "large": {
+        "count": 8,
+        "groundedness_mean": 0.92,
+        "hallucination_count_sum": 2
+      },
+      "mid": {
+        "count": 4,
+        "groundedness_mean": 0.943,
+        "hallucination_count_sum": 0
+      },
+      "kosdaq": {
+        "count": 3,
+        "groundedness_mean": 0.883,
+        "hallucination_count_sum": 1
+      }
+    }
+  },
+  "records": [
+    {
+      "symbol": "005930",
+      "stock_name": "삼성전자",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "삼성전자는 메타의 AI 투자 우려로 인한 글로벌 악재에 2일 9.06% 급락했으나 [뉴스 1번, 4번], 3일에는 전장 대비 8.22% 상승하며 회복세를 보였습니다 [뉴스 3번]. 시장에서는 반도체 수요 피크아웃 우려가 있는 한편 [뉴스 2번], 메모리 호황이 2027년까지 지속될 것으로 전망되며 삼성전자 영업익이 전년 대비 725% 증가할 것으로 예상됩니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "메타 클라우드 사업 구상 보도로 인한 AI 연산 자원 공급 과잉 우려가 주가 급락 원인 [뉴스 4번]",
+        "글로벌 빅테크의 대규모 투자 지속으로 일시적 조정 후 회복 [뉴스 3번]",
+        "반도체 수요 피크아웃 우려와 AI 거품론이 시장에서 제기됨 [뉴스 2번]",
+        "메모리 호황이 2027년까지 지속될 것으로 전망 [뉴스 5번]"
+      ],
+      "risk_notes": [
+        "단기 가격 변동성이 클 수 있으며, AI 관련 글로벌 뉴스에 민감한 반응을 보이고 있습니다",
+        "반도체 산업의 수요 전망에 대한 시장 의견이 엇갈리고 있습니다",
+        "미국 등 주요 시장의 경제 악재가 국내 주식시장 전반에 영향을 미칠 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.NEWSTOMATO.COM": 1,
+        "WWW.KHAN.CO.KR": 1,
+        "WWW.SEGYE.COM": 1,
+        "WWW.TOPSTARNEWS.NET": 1,
+        "WWW.MEGAECONOMY.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 13513,
+      "judge": {
+        "groundedness": 0.95,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.9,
+        "notes": "median of 3 judges | 뉴스 근거 충실, 투자권유 없음",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "000660",
+      "stock_name": "SK하이닉스",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "SK하이닉스는 최근 주가 급락으로 ADR 발행 규모를 45조4500억원에서 43조1400억원으로 축소했습니다 [뉴스 3번, 5번]. KB증권은 AI 메모리 공급부족이 2028년까지 지속될 것으로 전망하며 목표가를 420만원으로 상향 조정했습니다 [뉴스 2번]. 시장에서는 반도체 수요 피크아웃 우려와 함께 국내 반도체 산업의 기초체력이 견고하다는 평가가 엇갈리고 있습니다 [뉴스 1번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "AI 메모리 수요가 2028년까지 공급 부족 상태를 유지할 것으로 전망 [뉴스 2번]",
+        "최근 주가 하락으로 ADR 발행 규모를 2조3100억원 축소 [뉴스 3번, 5번]",
+        "반도체 수요 피크아웃 우려와 기초체력 견고성에 대한 상반된 평가 존재 [뉴스 1번]"
+      ],
+      "risk_notes": [
+        "반도체 수요가 정점을 찍었다는 피크아웃 우려가 시장에 제기되고 있습니다",
+        "AI 거품론이 대두되면서 변동성 확대 가능성이 있습니다",
+        "단일 종목 레버리지 ETF로 인한 우량주 변동성 심화로 투자 리스크가 증가할 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.KHAN.CO.KR": 1,
+        "WWW.ECONOVILL.COM": 1,
+        "WWW.LIVEBIZ.TODAY": 1,
+        "WWW.G-ENEWS.COM": 2
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 7112,
+      "judge": {
+        "groundedness": 0.97,
+        "citation_accuracy": 0.97,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.88,
+        "notes": "median of 3 judges | 뉴스 충실 반영, 핵심 누락 없음",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "035420",
+      "stock_name": "NAVER",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "NAVER 주가는 7월 3일 장중 195,500원으로 전일 대비 2.20% 하락했으며 [뉴스 1번], 이후 시장 전반의 약세 속에서 고점 대비 30% 안팎의 낙폭을 기록했습니다 [뉴스 2번]. 회사는 주식교환·이전결정 공시 기재정정과 지속가능경영보고서 등을 공개했습니다 [뉴스 3번, 4번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "7월 3일 장중 195,500원으로 전일 대비 2.20% 하락 [뉴스 1번]",
+        "고점 대비 약 30% 안팎의 하락세 기록 [뉴스 2번]",
+        "주식교환·이전결정 관련 공시 기재정정 [뉴스 3번]",
+        "지속가능경영보고서 자율공시 제출 [뉴스 4번]"
+      ],
+      "risk_notes": [
+        "단기 변동성이 있을 수 있으며, 시장 전반의 약세가 개별 주가에 영향을 미칠 수 있습니다",
+        "공시 내용의 세부 사항에 대한 추가 정보 확인이 필요합니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.JOONGANGENEWS.COM": 1,
+        "WWW.SEDAILY.COM": 1,
+        "DART": 2,
+        "WWW.ASIATODAY.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 7469,
+      "judge": {
+        "groundedness": 0.92,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.85,
+        "notes": "median of 3 judges | 핵심 뉴스 충실 반영",
+        "judge_runs": 3,
+        "groundedness_std": 0.009,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "035720",
+      "stock_name": "카카오",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "카카오뱅크는 2분기 순이익이 시장 기대치에 부합할 것으로 전망되며 [뉴스 1번, 2번], KB증권은 투자의견 '매수'와 목표주가 3만3000원을 유지했습니다 [뉴스 1번]. 인터넷전문은행의 대면 영업 허용으로 기업금융 확대 길이 열렸으며, 카카오뱅크의 기업여신은 전년 동기 대비 50.8% 증가한 3조4030억원을 기록했습니다 [뉴스 3번]. 한편 카카오는 5월 임금협상 결렬 후 노사 갈등이 계속되고 있습니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "카카오뱅크 2분기 순이익이 시장 기대치에 부합할 전망 [뉴스 1번, 2번]",
+        "2분기 별도 기준 당기순이익이 전년 동기 대비 7.8% 증가한 1361억원 예상 [뉴스 2번]",
+        "인터넷전문은행 대면 영업 허용으로 기업금융 확대 기회 [뉴스 3번]",
+        "카카오뱅크 기업여신이 전년 동기 대비 50.8% 증가 [뉴스 3번]",
+        "카카오 노사 갈등 지속 중 [뉴스 5번]"
+      ],
+      "risk_notes": [
+        "순이자마진(NIM) 변동에 따른 수익성 영향 가능성",
+        "금융규제 환경 변화에 대한 대응 필요",
+        "노사 갈등으로 인한 경영 리스크 존재",
+        "기업여신 확대에 따른 신용리스크 관리 중요"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.JOSEILBO.COM": 1,
+        "WWW.PRESS9.KR": 1,
+        "WWW.FINOMY.COM": 1,
+        "DART": 1,
+        "WWW.ASIATIME.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 11235,
+      "judge": {
+        "groundedness": 0.88,
+        "citation_accuracy": 0.9,
+        "hallucination_count": 1,
+        "hallucination_examples": [
+          "순이자마진(NIM) 변동에 따른 수익성 영향 가능성 - NIM이 '크게' 변동한다는 내용은 뉴스 2번에 일부 언급되나, risk_notes에서 독립적 리스크로 구체화한 것은 뉴스 근거 불충분",
+          "순이자마진(NIM) 변동에 따른 수익성 영향 가능성 (NIM이 '크게' 변동한다는 구체적 근거 없이 risk_notes에 서술; 뉴스2에 NIM 언급은 있으나 리스크로 연결하는 근거 불충분)",
+          "순이자마진(NIM) 변동에 따른 수익성 영향 가능성 (뉴스에서 NIM이 '큰 변동 없음' 수준으로 언급되나 risk_notes에서 불확실성을 과도하게 확대 서술)"
+        ],
+        "coverage": 0.75,
+        "notes": "median of 3 judges | 핵심 수치 정확, 카카오 본사 관련 내용 빈약",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "005380",
+      "stock_name": "현대차",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "현대차는 6월 글로벌 판매량이 33만 8,313대로 전년 동월 대비 5.9% 감소했으나 [뉴스 2번, 3번], 미국 시장에서는 상반기 기준 역대 최대 실적인 92만 383대를 기록했습니다 [뉴스 4번]. 주가는 49만 원 수준에서 견조한 매수세를 보이고 있으며 [뉴스 1번], 그룹은 영남권에 42조 원 규모 투자를 추진할 계획입니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "6월 글로벌 판매량 5.9% 감소 (국내 6.2%, 해외 5.8% 하락) [뉴스 2번, 3번]",
+        "미국 시장 상반기 판매 92만 383대로 역대 최대 실적 달성 [뉴스 4번]",
+        "영남권 42조 원 규모 투자 계획 발표 [뉴스 5번]",
+        "하반기 신차 출시와 생산·판매 최적화 전략 추진 [뉴스 3번]"
+      ],
+      "risk_notes": [
+        "글로벌 판매량이 전년 동월 대비 감소세를 보이고 있어 시장 수요 약화 가능성",
+        "노사협상 진행 중으로 인한 노동 이슈 존재",
+        "단기 변동성이 있을 수 있으며, 하반기 신차 출시 성과에 따른 불확실성"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.JOB-POST.CO.KR": 1,
+        "WWW.UJEIL.COM": 1,
+        "WWW.ULSANPRESS.NET": 1,
+        "WWW.IDAEGU.CO.KR": 1,
+        "WWW.HANKYUNG.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 9993,
+      "judge": {
+        "groundedness": 0.92,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [
+          "노사협상 진행 중으로 인한 노동 이슈 존재 — 뉴스 2번은 노사협상을 언급하지만 '진행 중'이라는 현황 확정은 뉴스에 명시되지 않음"
+        ],
+        "coverage": 0.88,
+        "notes": "median of 3 judges | 핵심사실 충실히 반영",
+        "judge_runs": 3,
+        "groundedness_std": 0.014,
+        "hallucination_count_std": 0.471,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "373220",
+      "stock_name": "LG에너지솔루션",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "LG에너지솔루션은 최근 코스피 하락장에서 1.72% 상승 마감하며 상대적으로 강세를 보였습니다 [뉴스 1번, 2번]. 혼다와의 미국 합작 배터리 공장이 본격 가동되며 ESS용 배터리를 양산하기 시작했습니다 [뉴스 5번]. 다만 배터리 업황 둔화 여파로 분기 적자를 기록한 바 있어 [뉴스 2번], 업계 경기 회복이 주요 과제인 상황입니다. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "미국 합작 배터리 공장 ESS용 양산 개시 [뉴스 5번]",
+        "배터리 업황 둔화 여파로 분기 적자 기록 [뉴스 2번]",
+        "최근 시장 하락 속에서 상대적 강세 [뉴스 1번, 2번]",
+        "글로벌 배터리 제조사로서 주요 고객사 확보 [뉴스 4번]"
+      ],
+      "risk_notes": [
+        "배터리 시장 경기 둔화로 인한 실적 부진 위험",
+        "전기차 수요 부진에 따른 배터리 시장 수축 가능성",
+        "중국 경쟁사의 미국 시장 진출로 인한 경쟁 심화",
+        "ESS 시장 수요 변동성에 따른 매출 변동 가능성"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SISAFOCUS.CO.KR": 1,
+        "WWW.EKN.KR": 1,
+        "WWW.ECONONEWS.CO.KR": 1,
+        "WWW.ECONOVILL.COM": 1,
+        "WWW.NEWS1.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 11368,
+      "judge": {
+        "groundedness": 0.88,
+        "citation_accuracy": 0.85,
+        "hallucination_count": 1,
+        "hallucination_examples": [
+          "중국 경쟁사의 미국 시장 진출로 인한 경쟁 심화 (뉴스4는 SK 지분 보유 중국 동박사의 미국 상장 추진 내용이며, LG에너지솔루션과 직접적인 미국 시장 경쟁 심화를 뉴스가 명시하지 않음)",
+          "중국 경쟁사의 미국 시장 진출로 인한 경쟁 심화 (뉴스4는 동박사의 미국 상장 추진이며, 중국 경쟁사의 미국 시장 진출로 직접 연결되지 않음)",
+          "중국 경쟁사의 미국 시장 진출로 인한 경쟁 심화 (뉴스4는 중국 동박사의 미국 상장 추진이며, 미국 시장 진출로 인한 LG엔솔 경쟁 심화라는 직접 연결은 뉴스에 없음)"
+        ],
+        "coverage": 0.82,
+        "notes": "median of 3 judges | 전반적으로 근거 충실, risk일부 과잉추론",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "068270",
+      "stock_name": "셀트리온",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "셀트리온은 2분기 연결 기준 매출 1조3000억원, 영업이익 4300억원을 기록해 역대 최대 분기 실적을 달성했습니다 [뉴스 2, 3, 4번]. 신규 제품 확대와 수익성 개선 전략이 본격적으로 성과를 내고 있으며, 신규 제품 매출 비중이 60%를 돌파한 것으로 나타났습니다 [뉴스 5번]. 다만 증권가는 호실적에도 불구하고 목표주가를 잇달아 낮추고 있습니다 [뉴스 2번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "2분기 영업이익 4300억원으로 전년 대비 77% 증가 [뉴스 3번]",
+        "신규 제품 매출 비중이 60%를 돌파하며 포트폴리오 다각화 진행 [뉴스 5번]",
+        "합병 비용 해소 및 고원가 재고 소진 효과로 수익성 개선 [뉴스 5번]",
+        "주력 제품의 안정적 판매와 생산역량 확대 진행 [뉴스 4번]"
+      ],
+      "risk_notes": [
+        "증권가 목표주가 하향 조정으로 시장 평가가 �엇갈릴 수 있습니다",
+        "신규 제품 확대에 따른 시장 수용도 변동성이 있을 수 있습니다",
+        "하반기 실적 기대감이 현실화되지 못할 경우 단기 변동성이 클 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "ECONOMIST.CO.KR": 1,
+        "WWW.IMINJU.NET": 1,
+        "WWW.ASIATIME.CO.KR": 1,
+        "NEWS.DEALSITETV.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 10774,
+      "judge": {
+        "groundedness": 0.92,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.85,
+        "notes": "median of 3 judges | 핵심수치 정확, 뉴스근거 충실",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "005490",
+      "stock_name": "POSCO홀딩스",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "POSCO홀딩스는 철강 스프레드 확대와 가격 인상 추진으로 3분기 영업이익이 전 분기 대비 29.7% 증가한 8942억원으로 예상되며 영업실적 개선이 기대되고 있습니다 [뉴스 2번]. 한편 2분기 실적이 시장 예상을 밑돌 것으로 보이면서 단기 변동성이 있을 수 있으며 [뉴스 5번], 모듈러 건축용 고강도 철강 소재 공급 경쟁력도 부각되고 있습니다 [뉴스 4번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "철강 스프레드 확대 및 하반기 공격적 가격 인상 추진 [뉴스 2번]",
+        "3분기 영업이익 전 분기 대비 29.7% 증가 예상 [뉴스 2번]",
+        "중장기 사업 포트폴리오 전환 및 재무전략을 담은 신포트폴리오 전략 공시 [뉴스 3번]",
+        "모듈러 건축 시장 성장에 따른 고강도 철강 소재 공급 경쟁력 부각 [뉴스 4번]"
+      ],
+      "risk_notes": [
+        "2분기 실적 부진으로 단기 주가 약세가 나타날 수 있습니다",
+        "경기 민감주로서 거시경제 지표 변화에 영향을 받을 수 있습니다",
+        "철강 스프레드 변동성에 따른 수익성 변동 가능성이 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.NEWSPRIME.CO.KR": 1,
+        "WWW.KDPRESS.CO.KR": 1,
+        "WWW.PINPOINTNEWS.CO.KR": 1,
+        "WWW.CHOICENEWS.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 8168,
+      "judge": {
+        "groundedness": 0.92,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.85,
+        "notes": "median of 3 judges | 뉴스 근거 충실, 투자권유 없음",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "012450",
+      "stock_name": "한화에어로스페이스",
+      "tier": "mid",
+      "ok": true,
+      "error": null,
+      "summary": "한화에어로스페이스는 최근 주가가 4.12% 상승하며 강세를 보였습니다 [뉴스 1번]. 2분기 실적으로는 매출 7조1524억원, 영업이익 1조224억원의 호성적이 예상되고 있습니다 [뉴스 2번]. 한화그룹은 KAI 지분 7.61%를 추가 확보하여 총 10.15% 지분율을 보유하게 되었으며, 방산·우주항공 분야에서의 파트너십을 강화하고 있습니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "최근 주가 4.12% 상승세 [뉴스 1번]",
+        "2분기 예상 매출 7조1524억원, 영업이익 1조224억원 [뉴스 2번]",
+        "한화그룹의 KAI 지분율 10.15% 확보로 방산·우주항공 파트너십 강화 [뉴스 5번]"
+      ],
+      "risk_notes": [
+        "2분기 실적은 유력한 예상치이므로 실제 공시 결과와 차이가 발생할 수 있습니다",
+        "방산주의 특성상 정책 변화, 국방력 수급 등 외부 요인에 민감할 수 있습니다",
+        "단기 변동성이 있을 수 있으니 주의가 필요합니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.ASIATIME.CO.KR": 1,
+        "DART": 2,
+        "WWW.GNNEWS.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 7578,
+      "judge": {
+        "groundedness": 0.95,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.75,
+        "notes": "median of 3 judges | 핵심사실 충실, 공시내용 미반영",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "034020",
+      "stock_name": "두산에너빌리티",
+      "tier": "mid",
+      "ok": true,
+      "error": null,
+      "summary": "두산에너빌리티는 [2026-07-03] 장중 변동성이 큰 거래를 보였으며, 최근 단기 상승에 따른 차익실현 매물이 출회되면서 약세를 나타냈다 [뉴스 2번]. 상반기 외국인 순매수 2위 종목으로 약 1조7000억원이 유입되었으며, 이는 AI 데이터센터 확산에 따른 전력 수요 증가와 원전 투자 확대 기대가 배경이 된 것으로 분석된다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "상반기 외국인 순매수 2위로 약 1조7000억원 유입 [뉴스 5번]",
+        "AI 데이터센터 확산에 따른 전력 수요 증가 기대 [뉴스 5번]",
+        "원전 투자 확대 기대 [뉴스 5번]",
+        "최근 단기 상승에 따른 차익실현 매물 출회 [뉴스 2번]"
+      ],
+      "risk_notes": [
+        "당일 변동성이 극심하며 낙폭과 상승을 반복하고 있음",
+        "차익실현 매물 출회로 단기 약세 흐름이 이어지는 중",
+        "시장 전체 변동성이 큰 상황에서 추가 변동성 가능성"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.JOB-POST.CO.KR": 1,
+        "WWW.NEWSIS.COM": 2,
+        "BIZ.HERALDCORP.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 8606,
+      "judge": {
+        "groundedness": 0.95,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.85,
+        "notes": "median of 3 judges | 근거 충실, 핵심 잘 반영",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "066570",
+      "stock_name": "LG전자",
+      "tier": "mid",
+      "ok": true,
+      "error": null,
+      "summary": "LG전자 주가가 한 달여 만에 50% 이상 하락한 가운데 [뉴스 1번], 7월 7일 2분기 잠정실적 발표를 앞두고 있습니다. 하나증권은 미국 관세 환급 효과와 데이터센터 냉각 수요 확대를 배경으로 목표주가를 기존 23만원에서 26만원으로 상향했으며 [뉴스 2번, 4번], 2분기 실적이 시장 기대를 상회할 전망이라 분석했습니다 [뉴스 3번, 4번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "한 달여 만에 주가 50% 이상 하락 [뉴스 1번]",
+        "2분기 관세 환급 효과로 실적 개선 기대 [뉴스 3번, 4번]",
+        "데이터센터 냉각 사업 성장 전망 [뉴스 2번, 4번]",
+        "판가 인상과 원가 효율화로 수익성 방어 중 [뉴스 4번]",
+        "하나증권이 목표주가를 26만원으로 상향, 상승여력 35% 제시 [뉴스 2번, 3번]"
+      ],
+      "risk_notes": [
+        "2분기 실적 발표 전 시장의 기대치가 높아 있어 결과에 따라 변동성이 클 수 있습니다",
+        "관세 환급은 일회성 요인으로, 지속성 여부 확인이 필요합니다",
+        "글로벌 경제 상황 변화에 따른 수요 불확실성이 존재합니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.HANKYUNG.COM": 1,
+        "WWW.TOPSTARNEWS.NET": 1,
+        "WWW.NEWSQUEST.CO.KR": 1,
+        "WWW.THEPOWERNEWS.CO.KR": 1,
+        "DART": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 9976,
+      "judge": {
+        "groundedness": 0.95,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.85,
+        "notes": "median of 3 judges | 뉴스 근거 충실, 투자권유 없음",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "207940",
+      "stock_name": "삼성바이오로직스",
+      "tier": "mid",
+      "ok": true,
+      "error": null,
+      "summary": "삼성바이오로직스는 국내 의약품 수출액 증가 소식에 강세를 보이고 있으며 [뉴스 2번], 2분기 호실적 전망이 있으나 목표주가가 하향 조정되었습니다 [뉴스 3번]. 공장 풀가동과 환율 효과로 외형 성장을 달성했지만 대형 신규 수주 공백과 노사 이슈 등이 경영진의 리스크 관리 능력을 시험하고 있습니다 [뉴스 3번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "국내 의약품 수출액 증가로 바이오주 강세 [뉴스 2번]",
+        "2분기 호실적 전망 [뉴스 3번]",
+        "공장 풀가동과 환율 효과로 외형 성장 달성 [뉴스 3번]",
+        "대형 신규 수주 공백 문제 [뉴스 3번]",
+        "노사 이슈로 인한 경영진 리스크 [뉴스 3번]"
+      ],
+      "risk_notes": [
+        "목표주가 하향 조정으로 인한 주가 변동성 주의",
+        "대형 신규 수주 공백이 향후 실적에 영향을 줄 수 있음",
+        "노사 갈등 등 경영 리스크 요소 존재",
+        "외국인 매도세와 같은 시장 변동성에 따른 변동 가능성"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.POLINEWS.CO.KR": 1,
+        "WWW.BUSAN.COM": 1,
+        "DART": 1,
+        "WWW.NSPNA.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 7669,
+      "judge": {
+        "groundedness": 0.92,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.85,
+        "notes": "median of 3 judges | 뉴스 근거 충실, 공시내용 미반영",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "247540",
+      "stock_name": "에코프로비엠",
+      "tier": "kosdaq",
+      "ok": true,
+      "error": null,
+      "summary": "에코프로비엠은 미국 반도체 시장 부진의 영향으로 지난 며칠간 연속 하락세를 기록했습니다 [뉴스 1번, 2번, 3번]. 특히 대규모 유상증자 결정이 발표되면서 투자심리가 악화된 것으로 분석됩니다 [뉴스 2번]. 이차전지 업종 전반의 부진 가운데 외국인 매도세가 지속되고 있습니다 [뉴스 3번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "미국 반도체 시장 쇼크의 여파로 주가 하락 [뉴스 1번, 4번]",
+        "3거래일 연속 급락 끝에 연저점 경신 [뉴스 2번]",
+        "대규모 유상증자 결정으로 투자심리 악화 [뉴스 2번]",
+        "이차전지 업종 전반의 주가 부진 지속 [뉴스 2번]",
+        "외국인 매도세 지속 [뉴스 3번]"
+      ],
+      "risk_notes": [
+        "이차전지 업종 전반의 부진이 연내 계속될 수 있습니다",
+        "글로벌 반도체 시장의 불확실성으로 인한 단기 변동성이 있을 수 있습니다",
+        "유상증자 진행에 따른 추가 주가 변동성이 발생할 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.KUKINEWS.COM": 1,
+        "WWW.MT.CO.KR": 1,
+        "WWW.TOKENPOST.KR": 1,
+        "WWW.FINOMY.COM": 1,
+        "WWW.NEWSWORKS.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 8458,
+      "judge": {
+        "groundedness": 0.9,
+        "citation_accuracy": 0.9,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.85,
+        "notes": "median of 3 judges | 핵심 사실 충실 반영",
+        "judge_runs": 3,
+        "groundedness_std": 0.009,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "196170",
+      "stock_name": "알테오젠",
+      "tier": "kosdaq",
+      "ok": true,
+      "error": null,
+      "summary": "알테오젠은 최근 코스닥 시총 상위주 중 약세를 보이고 있습니다. [뉴스 1번]에서 33만 3750원으로 전일 대비 5.05% 하락했으며, [뉴스 2번]에서도 -4.84% 낙폭을 기록했습니다. [뉴스 4번]에서는 알테오젠 등 코스닥 대장주들의 유가증권시장(코스피) 이전 상장 논란이 언급되고 있습니다. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "코스닥 시총 상위 1위 종목으로 33만 3750원에 전일 대비 5.05% 하락 [뉴스 1번]",
+        "주가 약세와 함께 코스닥 대장주의 코스피 이전 상장 논란 진행 중 [뉴스 4번]",
+        "과거 기업 가치 3조 원 대비 현재 가치가 상당히 상승했다는 평가 [뉴스 3번]"
+      ],
+      "risk_notes": [
+        "최근 몇 거래일 연속 약세를 보이고 있어 단기 변동성이 있을 수 있습니다",
+        "코스닥 시장 전반의 약세 속에서 함께 하락 추세를 보이고 있습니다",
+        "코스피 이전 상장 관련 논란이 있어 시장 심리 변동성이 있을 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.CBCI.CO.KR": 1,
+        "WWW.MEDICALTIMES.COM": 1,
+        "WWW.SEGYE.COM": 1,
+        "WWW.BETANEWS.NET": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 13005,
+      "judge": {
+        "groundedness": 0.9,
+        "citation_accuracy": 0.9,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.7,
+        "notes": "median of 3 judges | 근거 충실, 기술수출 내용 미반영",
+        "judge_runs": 3,
+        "groundedness_std": 0.009,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    },
+    {
+      "symbol": "277810",
+      "stock_name": "레인보우로보틱스",
+      "tier": "kosdaq",
+      "ok": true,
+      "error": null,
+      "summary": "레인보우로보틱스는 메타의 AI 설비투자 우려와 글로벌 시장 약세의 영향으로 최근 약 2~6% 낙폭을 나타냈습니다 [뉴스 1번, 2번, 4번, 5번]. 신한투자증권은 메타발 AI 설비투자에 대한 의구심이 장비주가 반도체와 함께 움직이는 요인으로 분석했습니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "메타의 AI 설비투자 의구심에 장비주들이 일제히 하락 [뉴스 2번, 5번]",
+        "7월 2~3일 코스피 8%, 코스닥 6% 이상의 광범위한 시장 약세 [뉴스 5번]",
+        "해당 종목이 메모리 반도체와 커플링되며 연쇄 하락 [뉴스 5번]"
+      ],
+      "risk_notes": [
+        "글로벌 AI 투자 심리 변화에 따른 단기 변동성이 높을 수 있습니다",
+        "장비주 섹터 전반의 동반 하락 추세가 지속될 가능성이 있습니다",
+        "외환 시장 변동(원달러 환율 상승)이 추가 변수로 작용할 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.NEWSTOMATO.COM": 1,
+        "WWW.NEWS1.KR": 1,
+        "WWW.JOONGANGENEWS.COM": 1,
+        "WEEKLY.HANKOOKI.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 14746,
+      "judge": {
+        "groundedness": 0.85,
+        "citation_accuracy": 0.8,
+        "hallucination_count": 1,
+        "hallucination_examples": [
+          "해당 종목이 메모리 반도체와 커플링되며 연쇄 하락 — 뉴스 5번의 커플링 표현은 장비주 전반에 대한 것이며 레인보우로보틱스를 메모리 반도체와 직접 커플링된다고 명시하지 않음",
+          "해당 종목이 메모리 반도체와 커플링되며 연쇄 하락 — 뉴스 5번은 '장비주가 메모리 반도체와 커플링'된다고 언급했으나, 레인보우로보틱스를 장비주로 명시적으로 분류하거나 직접 연결한 내용은 없음",
+          "해당 종목이 메모리 반도체와 커플링되며 연쇄 하락 - 뉴스 5번은 '장비주가 메모리 반도체와 커플링'된다고 했으나 레인보우로보틱스를 장비주로 특정하지 않았으며, 로봇 기업인 레인보우로보틱스에 이를 직접 적용한 것은 뉴스 근거가 약함"
+        ],
+        "coverage": 0.7,
+        "notes": "median of 3 judges | 핵심 하락 사실 반영, 과잉해석 1건",
+        "judge_runs": 3,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false
+      }
+    }
+  ]
+}

@@ -25,6 +25,21 @@ class Settings(BaseSettings):
     # RAG
     retrieval_top_k: int = 5
     retrieval_days_window: int = 14
+    # hybrid 검색에서 dense/sparse 각각의 초기 후보 개수. rerank 는 이걸 병합해 top_k 로 좁힌다.
+    retrieval_initial_k: int = 20
+
+    # Cohere Rerank — 비면 rerank 스킵 (RRF 순위 그대로 사용).
+    cohere_api_key: str = ""
+    cohere_rerank_model: str = "rerank-v3.5"
+
+    # LLM-as-a-judge 를 N회 병렬 호출해 지표별 median 을 사용. 홀수 권장.
+    # 1 이면 단일 호출 (하위호환). 3 이면 outlier 완화 + 비용 3배.
+    judge_repeat: int = 3
+    # 판정 편차 (표준편차) 가 threshold 를 넘으면 자동 재판정 (extras 회 추가 → total 홀수 유지).
+    # 판정 3회로도 stochasticity 가 안 잡히는 종목만 선택적으로 재판정. 0 이면 재판정 비활성.
+    judge_std_threshold_grounded: float = 0.15
+    judge_std_threshold_halluc: float = 1.0
+    judge_retry_extras: int = 4
 
     # Redis — summary 응답 캐시. host 비어있으면 NoOp 으로 자동 fallback.
     redis_host: str = ""

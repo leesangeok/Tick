@@ -10,10 +10,13 @@ from app.adapters.embedding.openai_embedding_adapter import OpenAiEmbeddingAdapt
 from app.adapters.llm.anthropic_claude_adapter import AnthropicClaudeAdapter
 from app.adapters.observability.langfuse_trace_adapter import LangfuseTraceAdapter
 from app.adapters.observability.noop_trace_adapter import NoOpTraceAdapter
+from app.adapters.reranker.cohere_reranker_adapter import CohereRerankerAdapter
+from app.adapters.retriever.hybrid_retriever_adapter import HybridNewsRetrieverAdapter
 from app.adapters.retriever.pgvector_retriever_adapter import PgvectorNewsRetrieverAdapter
 from app.application.use_cases.embed_news import EmbedNewsUseCase
 from app.application.use_cases.summarize_stock import SummarizeStockUseCase
 from app.config.settings import settings
+from app.ports.reranker_port import RerankerPort
 from app.ports.summary_cache_port import SummaryCachePort
 from app.ports.trace_port import TracePort
 
@@ -36,8 +39,26 @@ def _llm() -> AnthropicClaudeAdapter:
 
 
 @lru_cache(maxsize=1)
-def _retriever() -> PgvectorNewsRetrieverAdapter:
+def _pgvector_delegate() -> PgvectorNewsRetrieverAdapter:
+    """upsert_missing_embeddings 는 계속 pgvector 어댑터가 담당 — hybrid 는 retrieve 만 재구성."""
     return PgvectorNewsRetrieverAdapter(pool=_pool())
+
+
+@lru_cache(maxsize=1)
+def _reranker() -> RerankerPort | None:
+    # Cohere key 가 있으면 rerank, 없으면 None → hybrid 어댑터가 RRF 순위로 fallback.
+    if settings.cohere_api_key:
+        return CohereRerankerAdapter()
+    return None
+
+
+@lru_cache(maxsize=1)
+def _retriever() -> HybridNewsRetrieverAdapter:
+    return HybridNewsRetrieverAdapter(
+        pool=_pool(),
+        reranker=_reranker(),
+        embedding_delegate=_pgvector_delegate(),
+    )
 
 
 @lru_cache(maxsize=1)
@@ -84,7 +105,10 @@ async def close_pool() -> None:
 
 
 def flush_langfuse() -> None:
-    """Shutdown 시 큐에 남은 trace 를 flush. CLAUDE.md '스크립트에서 flush() 없으면 trace 안 감' 가드."""
+    """Shutdown 시 큐에 남은 trace 를 flush.
+
+    CLAUDE.md '스크립트에서 flush() 없으면 trace 안 감' 가드.
+    """
     if settings.langfuse_public_key and settings.langfuse_secret_key:
         try:
             from langfuse import get_client

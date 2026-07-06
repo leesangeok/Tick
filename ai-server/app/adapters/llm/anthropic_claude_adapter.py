@@ -50,7 +50,8 @@ class AnthropicClaudeAdapter:
             [system, HumanMessage(content=user_prompt)],
             config=self._config,
         )
-        text = response.content if isinstance(response.content, str) else self._join_blocks(response.content)
+        content = response.content
+        text = content if isinstance(content, str) else self._join_blocks(content)
         parsed = self._parse_json(text)
 
         return AiSummary(

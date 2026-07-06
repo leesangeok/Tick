@@ -17,7 +17,7 @@ router = APIRouter()
 @router.post("/ai/summary", response_model=StockSummaryResponse)
 async def post_summary(
     req: StockSummaryRequest,
-    use_case: SummarizeStockUseCase = Depends(get_summarize_stock_use_case),
+    use_case: SummarizeStockUseCase = Depends(get_summarize_stock_use_case),  # noqa: B008
 ) -> StockSummaryResponse:
     if not settings.anthropic_api_key or not settings.openai_api_key:
         raise HTTPException(status_code=503, detail="ai keys not configured")
