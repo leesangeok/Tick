@@ -78,8 +78,11 @@ class DartDisclosureAdapter(
         // list.json 응답의 pblntf_ty 필드가 종종 null 로 온다 (특히 임원/주요주주 관련 공시).
         // null 은 include-types 로 걸러낼 수 없으니 그대로 통과 — 클라이언트 필터의 목적은
         // 지분(D)/기타(E) 같은 명시적 소음 컷이지 미분류 공시를 잘라내는 게 아니다.
+        //
+        // 추가: report_nm 이 noise-title-keywords 를 포함하면 요약 오염 원인이라 컷.
         val kept = response.list.orEmpty()
             .filter { it.pblntfTy == null || it.pblntfTy in properties.includeTypes }
+            .filter { item -> properties.noiseTitleKeywords.none { it in item.reportNm } }
             .take(limit)
 
         return kept.mapNotNull { item ->

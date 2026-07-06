@@ -18,4 +18,16 @@ data class DartProperties(
      * 기본은 가격 파급 큰 상위 세 유형만. D/E 는 노이즈 커서 제외.
      */
     val includeTypes: List<String> = listOf("A", "B", "C"),
+    /**
+     * report_nm 에 포함되면 요약 근거 후보에서 제외하는 소음 키워드.
+     * eval 관측: SK하이닉스·셀트리온 등에서 "임원ㆍ주요주주특정증권등소유상황보고서" 류가
+     * top-K 에 유입되며 요약을 오염시키는 사례 다수. 회사가 발표한 실적/증자/M&A 공시만
+     * 근거로 남기고 지분 신고류는 컷.
+     */
+    val noiseTitleKeywords: List<String> = listOf(
+        "임원",
+        "주요주주",
+        "특정증권",
+        "소유상황",
+    ),
 )
