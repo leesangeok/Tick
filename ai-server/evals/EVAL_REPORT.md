@@ -39,23 +39,25 @@ python -m evals.check_regression
 
 각 단계는 **retriever 변경 없이 소스만 늘리는 것 (1→2)** 과 **retriever 자체를 바꾸는 것 (2→3, 3→4)** 로 구분된다.
 
-| 지표 | 1. Baseline | 2. +DART | 3. **+Hybrid** | 4. +Rerank | 5. +Judge×3 median | 6. **+σ retry** |
-|---|---|---|---|---|---|---|
-| `groundedness_mean` | 0.883 | 0.841 | 0.908 | 0.866 | 0.889 | **0.909** ⭐ |
-| `citation_accuracy_mean` | 0.900 | 0.847 | 0.921 | 0.873 | 0.894 | **0.922** ⭐ |
-| **`hallucination_count_sum`** | **8** | 6 | **4** | 7 | 7 | **4** ⭐ |
-| `coverage_mean` | 0.805 | 0.770 | **0.851** | 0.783 | 0.821 | 0.826 |
-| `count_no_news` | 0 | 0 | 0 | 0 | 0 | 0 |
-| `groundedness_std_mean` | — | — | — | — | — | **0.003** |
-| `count_retried` | — | — | — | — | — | **0 / 15** |
+| 지표 | 1.Base | 2.+DART | 3.+Hybrid | 4.+Rerank | 5.+Median | 6.+σRetry | **7.+Cite+Denoise** |
+|---|---|---|---|---|---|---|---|
+| `groundedness_mean` | 0.883 | 0.841 | 0.908 | 0.866 | 0.889 | 0.909 | **0.919** ⭐ |
+| `citation_accuracy_mean` | 0.900 | 0.847 | 0.921 | 0.873 | 0.894 | 0.922 | **0.925** ⭐ |
+| **`hallucination_count_sum`** | **8** | 6 | 4 | 7 | 7 | 4 | **3** ⭐ |
+| `coverage_mean` | 0.805 | 0.770 | 0.851 | 0.783 | 0.821 | 0.826 | 0.822 |
+| `count_no_news` | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| `groundedness_std_mean` | — | — | — | — | — | 0.003 | 0.003 |
+| `count_retried` | — | — | — | — | — | 0/15 | 0/15 |
+
+**Baseline → Final**: groundedness **+0.036**, hallucination **-62.5%** (8→3), mid tier halluc **2→0**.
 
 ### Tier 별 세부 (grounded_mean / halluc_sum)
 
-| Tier | 1. Baseline | 2. +DART | 3. +Hybrid | 4. +Rerank | 5. +Median | 6. **+σ Retry** |
-|---|---|---|---|---|---|---|
-| large (n=8) | 0.866 / 5 | 0.899 / 3 | 0.901 / 2 | 0.848 / 4 | 0.899 / 3 | **0.911 / 3** |
-| mid (n=4) | 0.917 / 2 | 0.680 / 1 (outlier) | 0.927 / 1 | 0.905 / 1 | 0.890 / 2 | **0.917 / 0** ⭐ |
-| kosdaq (n=3) | 0.883 / 1 | 0.903 / 2 | 0.900 / 1 | 0.863 / 2 | 0.860 / 2 | 0.893 / 1 |
+| Tier | 1.Base | 3.+Hybrid | 6.+σRetry | **7.+Cite+Denoise** |
+|---|---|---|---|---|
+| large (n=8) | 0.866 / 5 | 0.901 / 2 | 0.911 / 3 | **0.920 / 2** ⭐ |
+| mid (n=4) | 0.917 / 2 | 0.927 / 1 | 0.917 / 0 | **0.943 / 0** ⭐ |
+| kosdaq (n=3) | 0.883 / 1 | 0.900 / 1 | 0.893 / 1 | 0.883 / 1 |
 
 `check_regression.py` 결과: **PASS** — current(rerank) 도 baseline 대비 halluc 8→7 감소, groundedness drop 0.017 tolerance 내.
 
@@ -79,6 +81,13 @@ python -m evals.check_regression
 
 **5 → 6 (+σ retry)**: 3회 판정 후 지표별 표준편차 (σ) 계산 → threshold (grounded σ ≥ 0.15 or halluc σ ≥ 1.0) 넘으면 자동 추가 판정 4회 (total 7회). **결과: `count_retried = 0 / 15`, `groundedness_std_mean = 0.003`** — 이번 실행의 판정은 매우 안정하여 재판정 로직이 발동 안 함. 이 안정성 자체가 새로운 관측: (1) mid tier grounded 0.917 / **halluc 0** 회복 (역대 최고), (2) hybrid-single 수준 (0.909/halluc 4) 재현, (3) 판정 stochasticity 는 조건에 따라 매우 크게 요동친다 (5단계 실행의 NAVER 0.82 vs 6단계의 0.82±0.0). **재판정 로직은 안전장치로 코드에 상시 존재하되, 판정이 이미 안정한 경우엔 자동으로 no-op — 비용을 조건부로만 지출** 하는 관측 결과.
 
+**6 → 7 (+citation-required 프롬프트 + DART noise blacklist + rerank ON)**: 두 축을 동시에.
+1) **Summary 프롬프트에 `[뉴스 N번]` 인용 마커 강제** — key_reasons/summary 안 사실 언급 시 어떤 뉴스에서 뒷받침되는지 명시. 근거 없으면 만들지 말라고 규칙화. hallucination 원천 방어.
+2) **DART report_nm 소음 blacklist** — `임원/주요주주/특정증권/소유상황` 포함 공시 컷 (수집/파싱 단계). DB 의 기존 57건 소음 뉴스도 정리 (DART 총 142→85건). SK하이닉스류 오염 원인 직접 제거.
+3) Rerank (Cohere v3.5) 도 다시 활성 — 3~5단계에서 후퇴 관측했지만 지금은 소음이 이미 컷된 상태라 rerank 가 정상 상위 문서를 뽑을 가능성 상승.
+
+**결과: 역대 최고**. groundedness 0.909→**0.919**, hallucination 4→**3**, mid tier grounded **0.943 / halluc 0**. Baseline 대비 halluc **8→3 (-62.5%)**, mid tier halluc **2→0**. Denoise 로 top-K 오염 원인 자체를 제거하니 rerank 도 정상 작동 (SK하이닉스 하락 재현 X). Citation 마커 강제로 요약 근거 트레이서빌리티까지 확보.
+
 ## 다음 iteration 방향 (관찰에서 자연스레 나오는)
 
 1. Reranker 를 domain fine-tunable 로 교체 — 로컬 BGE-reranker-v2-m3 + 한국 주식 뉴스 pair 로 소량 fine-tune
@@ -91,7 +100,7 @@ python -m evals.check_regression
 
 ## 이력서/포트폴리오용 한 줄
 
-> LLM RAG 요약 파이프라인 품질 회귀 방지를 위해 **LLM-as-a-judge (Claude Sonnet 4.6, 3회 median + σ 기반 자동 재판정)** 기반 evals 파이프라인 설계. 골든셋 15종목 × tier 별 4개 지표를 계량화하며 **6단계 iteration** (Naver → +DART → +Hybrid Dense+Sparse+RRF → +Cohere Rerank → +Judge×3 median → +σ retry) 을 실측. **최종 조합: groundedness 0.883 → 0.909, hallucination 8→4 (50% ↓), mid tier halluc 2→0**. Cohere Rerank v3.5 는 general-purpose reranker 의 domain 한계 (halluc 4→7) 로 폐기, Judge×3 median 은 삼성바이오 outlier (`grounded=0.0`) 재발 완전 방지. **판정 안정성을 σ 로 계량 → threshold 이하면 재판정 no-op** (`count_retried=0/15, σ_mean=0.003`) 로 비용을 조건부만 지출. GitHub Actions 회귀 게이트로 재발 자동 차단.
+> LLM RAG 요약 파이프라인 품질 회귀 방지를 위해 **LLM-as-a-judge (Claude Sonnet 4.6, 3회 median + σ 기반 자동 재판정)** 기반 evals 파이프라인 설계. 골든셋 15종목 × tier 별 4개 지표를 계량화하며 **7단계 iteration** (Naver → +DART → +Hybrid Dense+Sparse+RRF → +Cohere Rerank → +Judge×3 median → +σ retry → +Citation-required prompt + DART noise blacklist) 을 실측. **최종: groundedness 0.883 → 0.919, hallucination 8→3 (62.5% ↓), mid tier halluc 2→0** (역대 최고). 각 단계에서 후퇴 케이스도 계량화 — Cohere Rerank v3.5 초기 조합에서 domain 한계로 halluc 4→7 이었으나 소음 blacklist 후 rerank 도 정상 작동. Judge×3 median + σ retry 로 outlier 완전 방지 + 판정 안정성 자체를 계량 (`σ_mean=0.003, count_retried=0/15`). GitHub Actions 회귀 게이트 (`check_regression.py`) 로 재발 자동 차단.
 
 ## 관찰
 
