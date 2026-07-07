@@ -225,7 +225,7 @@ async def main() -> None:
 
     items = load_golden(args.golden)
     judge_label = (
-        f"multi: {JUDGE_MODEL} + {settings.openai_judge_model}"
+        f"multi: {JUDGE_MODEL} + {settings.opus_judge_model}"
         if settings.judge_multi_enabled
         else JUDGE_MODEL
     )
