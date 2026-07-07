@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     judge_std_threshold_halluc: float = 1.0
     judge_retry_extras: int = 4
 
+    # 다중 judge (판정 편향 교차검증). True 면 Claude + OpenAI 로 병렬 판정 후
+    # 지표별 median-of-medians. 두 모델 간 판정 편차 (disagreement σ) 도 함께 기록해 편향 진단.
+    judge_multi_enabled: bool = False
+    openai_judge_model: str = "gpt-4o-mini"
+
     # Redis — summary 응답 캐시. host 비어있으면 NoOp 으로 자동 fallback.
     redis_host: str = ""
     redis_port: int = 6379

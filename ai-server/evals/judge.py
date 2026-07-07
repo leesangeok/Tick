@@ -5,14 +5,20 @@ Summary 생성 모델(Haiku)과 다른 (더 큰) 모델을 쓰는 게 정석. So
 Stochasticity 완화: 같은 입력에도 판정이 흔들리는 걸 (특히 삼성바이오처럼 `grounded=0.0`
 outlier) 완화하기 위해 N회 병렬 호출 후 지표별 median 을 반환한다 (n=settings.judge_repeat).
 Hallucination_examples 는 union, notes 는 median-of-N 명시.
+
+편향(bias) 완충: 같은 모델을 N번 굴려도 systematic bias 는 안 잡힘. `judge_summary_multi`
+는 Claude + OpenAI 두 모델을 병렬 판정 후 median-of-medians 로 교차검증하며, 두 모델
+median 값의 차이를 disagreement 지표로 함께 기록한다.
 """
 
 import asyncio
 import json
 import statistics
+from dataclasses import asdict
 from typing import Any
 
 from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
 
 from app.config.settings import settings
 from app.domain.models.retrieved_news import RetrievedNews
@@ -59,33 +65,78 @@ async def judge_summary(
     expected_topics: list[str] | None = None,
     known_traps: list[str] | None = None,
     repeats: int | None = None,
+    provider: str = "claude",
 ) -> JudgeVerdict:
     """N회 병렬 판정 후 지표별 median. 판정 편차 (σ) 가 크면 자동으로 extras 회 추가 판정.
 
     Sonnet 4.6 이 같은 입력에도 개별 판정에 상당한 stochasticity 를 보이는 케이스가
     있어 3회 median 만으로는 완전 해결되지 않는다 (NAVER 등). σ 큰 종목만 선택적으로
     재판정하는 게 전체 비용은 유지하면서 안정성을 확보하는 실무적 접근.
+
+    provider: "claude" | "openai". 기본 claude (하위호환).
     """
     n = repeats if repeats is not None else settings.judge_repeat
     args = (
         symbol, stock_name, summary, key_reasons, risk_notes,
         news, expected_topics, known_traps,
     )
+    call = _judge_once_by(provider)
     if n <= 1:
-        return await _judge_once(*args)
+        return await call(*args)
 
-    verdicts = await asyncio.gather(*[_judge_once(*args) for _ in range(n)])
+    verdicts = await asyncio.gather(*[call(*args) for _ in range(n)])
     initial = _aggregate(verdicts)
 
     # 판정 편차 큰 경우 자동 재판정.
     extras = settings.judge_retry_extras
     if extras > 0 and _should_retry(initial):
-        more = await asyncio.gather(*[_judge_once(*args) for _ in range(extras)])
+        more = await asyncio.gather(*[call(*args) for _ in range(extras)])
         verdicts.extend(more)
         retried = _aggregate(verdicts)
         retried.retry_triggered = True
         return retried
     return initial
+
+
+async def judge_summary_multi(
+    symbol: str,
+    stock_name: str,
+    summary: str,
+    key_reasons: list[str],
+    risk_notes: list[str],
+    news: list[RetrievedNews],
+    expected_topics: list[str] | None = None,
+    known_traps: list[str] | None = None,
+) -> JudgeVerdict:
+    """Claude + OpenAI 두 모델을 병렬 판정 → 각 모델 median 후 median-of-medians.
+
+    같은 모델을 N번 굴리면 stochasticity 는 잡히지만 systematic bias 는 그대로 남는다
+    (예: Claude 가 특정 표현을 과도하게 관대/엄격하게 판정). 다른 provider 를 붙여
+    두 모델의 median 값을 교차검증하고, 그 차이를 disagreement 로 기록해 편향을 계량.
+    """
+    kwargs = dict(
+        symbol=symbol,
+        stock_name=stock_name,
+        summary=summary,
+        key_reasons=key_reasons,
+        risk_notes=risk_notes,
+        news=news,
+        expected_topics=expected_topics,
+        known_traps=known_traps,
+    )
+    v_claude, v_openai = await asyncio.gather(
+        judge_summary(**kwargs, provider="claude"),
+        judge_summary(**kwargs, provider="openai"),
+    )
+    return _combine_across_models(v_claude, v_openai)
+
+
+def _judge_once_by(provider: str):
+    if provider == "claude":
+        return _judge_once_claude
+    if provider == "openai":
+        return _judge_once_openai
+    raise ValueError(f"unknown judge provider: {provider}")
 
 
 def _should_retry(v: JudgeVerdict) -> bool:
@@ -94,7 +145,7 @@ def _should_retry(v: JudgeVerdict) -> bool:
     return v.groundedness_std >= gt or v.hallucination_count_std >= ht
 
 
-async def _judge_once(
+async def _judge_once_claude(
     symbol: str,
     stock_name: str,
     summary: str,
@@ -115,7 +166,37 @@ async def _judge_once(
         messages=[{"role": "user", "content": prompt}],
     )
     text = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
-    parsed = _parse_json(text)
+    return _verdict_from_json(_parse_json(text))
+
+
+async def _judge_once_openai(
+    symbol: str,
+    stock_name: str,
+    summary: str,
+    key_reasons: list[str],
+    risk_notes: list[str],
+    news: list[RetrievedNews],
+    expected_topics: list[str] | None,
+    known_traps: list[str] | None,
+) -> JudgeVerdict:
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    prompt = _build_prompt(
+        symbol, stock_name, summary, key_reasons, risk_notes, news, expected_topics, known_traps
+    )
+    resp = await client.chat.completions.create(
+        model=settings.openai_judge_model,
+        max_tokens=JUDGE_MAX_TOKENS,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": JUDGE_SYSTEM},
+            {"role": "user", "content": prompt},
+        ],
+    )
+    text = resp.choices[0].message.content or ""
+    return _verdict_from_json(_parse_json(text))
+
+
+def _verdict_from_json(parsed: dict[str, Any]) -> JudgeVerdict:
     return JudgeVerdict(
         groundedness=_clamp01(parsed.get("groundedness", 0.0)),
         citation_accuracy=_clamp01(parsed.get("citation_accuracy", 0.0)),
@@ -159,6 +240,44 @@ def _aggregate(verdicts: list[JudgeVerdict]) -> JudgeVerdict:
         groundedness_std=g_std,
         hallucination_count_std=h_std,
         retry_triggered=False,
+    )
+
+
+def _combine_across_models(claude: JudgeVerdict, openai: JudgeVerdict) -> JudgeVerdict:
+    """두 모델의 median 결과를 median-of-medians 로 결합 + disagreement 기록."""
+    def med2(a: float, b: float) -> float:
+        return round((a + b) / 2, 3)
+
+    seen: set[str] = set()
+    examples: list[str] = []
+    for v in (claude, openai):
+        for e in v.hallucination_examples:
+            if e not in seen:
+                seen.add(e)
+                examples.append(e)
+
+    return JudgeVerdict(
+        groundedness=med2(claude.groundedness, openai.groundedness),
+        citation_accuracy=med2(claude.citation_accuracy, openai.citation_accuracy),
+        hallucination_count=int((claude.hallucination_count + openai.hallucination_count) / 2),
+        hallucination_examples=examples,
+        coverage=med2(claude.coverage, openai.coverage),
+        notes=f"multi-judge | claude:{claude.notes} | openai:{openai.notes}"[:180],
+        judge_runs=claude.judge_runs + openai.judge_runs,
+        # 두 모델 각각의 within-model σ 는 개별 verdict 에 남기고,
+        # 상위 필드의 std 는 두 모델 median 값의 편차(cross-model σ) 로 재계산.
+        groundedness_std=round(
+            statistics.pstdev([claude.groundedness, openai.groundedness]), 3
+        ),
+        hallucination_count_std=round(
+            statistics.pstdev([claude.hallucination_count, openai.hallucination_count]), 3
+        ),
+        retry_triggered=claude.retry_triggered or openai.retry_triggered,
+        per_model={"claude": asdict(claude), "openai": asdict(openai)},
+        groundedness_disagreement=round(abs(claude.groundedness - openai.groundedness), 3),
+        hallucination_count_disagreement=abs(
+            claude.hallucination_count - openai.hallucination_count
+        ),
     )
 
 
