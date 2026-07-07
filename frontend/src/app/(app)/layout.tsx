@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { TopNavigation } from "@/components/layout/TopNavigation";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
 import { GlobalHotkeys } from "@/components/layout/GlobalHotkeys";
+import { OrderEventsListener } from "@/components/layout/OrderEventsListener";
 
 export default function AppLayout({
   children,
@@ -19,6 +20,7 @@ export default function AppLayout({
         <MobileNavigation />
       </div>
       <GlobalHotkeys />
+      <OrderEventsListener />
     </div>
   );
 }
