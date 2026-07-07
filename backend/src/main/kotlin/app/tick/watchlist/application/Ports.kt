@@ -6,6 +6,7 @@ import app.tick.watchlist.domain.Watchlist
 interface LoadWatchlistPort {
     fun loadAllByMemberId(memberId: Long): List<Watchlist>
     fun existsBy(memberId: Long, stockCode: StockCode): Boolean
+    fun loadAllDistinctSymbols(): List<StockCode>
 }
 
 interface SaveWatchlistPort {

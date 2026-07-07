@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     retrieval_days_window: int = 14
     # hybrid 검색에서 dense/sparse 각각의 초기 후보 개수. rerank 는 이걸 병합해 top_k 로 좁힌다.
     retrieval_initial_k: int = 20
+    # RRF 병합 점수에 published_at 기반 지수 감쇠 (반감기 = N 일). 0 이면 비활성.
+    # 급등락 이유 요약은 최신 뉴스가 중요. dense/sparse rank 는 시간 무관이라 결합해 신선도 보정.
+    retrieval_freshness_half_life_days: float = 3.0
+
+    # 쿼리 재작성 — Haiku 로 base_query 를 다변량 쿼리로 확장 후 variant별 hybrid 검색 → RRF 병합.
+    # 종목별 이슈 (실적/이벤트/섹터) 를 다양한 관점에서 잡아 recall 향상.
+    # 실패 시 base_query 로 fallback.
+    query_rewrite_enabled: bool = False
+    query_rewrite_model: str = "claude-haiku-4-5"
 
     # Cohere Rerank — 비면 rerank 스킵 (RRF 순위 그대로 사용).
     cohere_api_key: str = ""

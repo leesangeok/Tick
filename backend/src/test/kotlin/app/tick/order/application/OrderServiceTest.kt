@@ -37,6 +37,7 @@ class OrderServiceTest {
     private val saveHolding = mockk<SaveHoldingPort>(relaxed = true)
     private val saveOrder = mockk<SaveOrderPort>()
     private val loadStock = mockk<LoadStockSummaryPort>()
+    private val orderEventPublisher = mockk<OrderEventPublisherPort>(relaxed = true)
 
     private lateinit var service: OrderService
 
@@ -46,7 +47,10 @@ class OrderServiceTest {
 
     @BeforeEach
     fun setUp() {
-        service = OrderService(loadAccount, saveAccount, loadHolding, saveHolding, saveOrder, loadStock)
+        service = OrderService(
+            loadAccount, saveAccount, loadHolding, saveHolding, saveOrder, loadStock,
+            orderEventPublisher,
+        )
 
         // 기본 스텁: 종목 / 현재가 / 저장 시 그대로 반환
         every { loadStock.nameOf(stockCode) } returns "삼성전자"

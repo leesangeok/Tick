@@ -102,6 +102,18 @@ tick:
       quote-ttl-sec: ${KIS_QUOTE_TTL_SEC:30}
       series-ttl-sec: ${KIS_SERIES_TTL_SEC:3600}
       token-ttl-sec: ${KIS_TOKEN_TTL_SEC:82800}
+  schedule:
+    # 사용자 watchlist 종목만 대상. 로컬/개발 환경에서 실수로 외부 API 쿼터 소진하지 않도록 opt-in.
+    news-collect:
+      enabled: ${TICK_SCHEDULE_NEWS_COLLECT_ENABLED:false}
+      # 6시간마다 (00:00, 06:00, 12:00, 18:00 KST).
+      cron: ${TICK_SCHEDULE_NEWS_COLLECT_CRON:0 0 */6 * * *}
+      # 종목당 fetch 상한 — 소스별로 이 값까지만 요청.
+      per-symbol-limit: ${TICK_SCHEDULE_NEWS_COLLECT_LIMIT:20}
+    ai-embedding:
+      enabled: ${TICK_SCHEDULE_AI_EMBEDDING_ENABLED:false}
+      # 매일 새벽 03:30 KST — 뉴스 수집 후에 돌게 (00:00 news → 03:30 embed).
+      cron: ${TICK_SCHEDULE_AI_EMBEDDING_CRON:0 30 3 * * *}
   market:
     # 실시간 시세 WebSocket (KIS). enabled=false 면 KIS WS 미접속 + 프론트 /ws/market 도 미노출.
     enabled: ${TICK_MARKET_ENABLED:true}

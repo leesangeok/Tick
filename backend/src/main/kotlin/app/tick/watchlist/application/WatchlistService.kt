@@ -10,7 +10,7 @@ class WatchlistService(
     private val loadWatchlist: LoadWatchlistPort,
     private val saveWatchlist: SaveWatchlistPort,
     private val deleteWatchlist: DeleteWatchlistPort,
-) : GetWatchlistUseCase, AddToWatchlistUseCase, RemoveFromWatchlistUseCase {
+) : GetWatchlistUseCase, AddToWatchlistUseCase, RemoveFromWatchlistUseCase, GetWatchedSymbolsUseCase {
 
     @Transactional(readOnly = true)
     override fun get(memberId: Long): List<String> =
@@ -26,4 +26,8 @@ class WatchlistService(
     override fun remove(memberId: Long, stockCode: StockCode) {
         deleteWatchlist.deleteBy(memberId, stockCode)
     }
+
+    @Transactional(readOnly = true)
+    override fun allDistinctSymbols(): List<StockCode> =
+        loadWatchlist.loadAllDistinctSymbols()
 }

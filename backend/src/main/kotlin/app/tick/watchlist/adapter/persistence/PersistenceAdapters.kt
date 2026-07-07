@@ -18,6 +18,9 @@ class WatchlistPersistenceAdapter(
     override fun existsBy(memberId: Long, stockCode: StockCode): Boolean =
         repository.existsByMemberIdAndSymbol(memberId, stockCode.value)
 
+    override fun loadAllDistinctSymbols(): List<StockCode> =
+        repository.findAllDistinctSymbols().map(::StockCode)
+
     override fun save(watchlist: Watchlist): Watchlist =
         WatchlistMapper.toDomain(repository.save(WatchlistMapper.toEntity(watchlist)))
 
