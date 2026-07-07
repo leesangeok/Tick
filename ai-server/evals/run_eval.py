@@ -35,7 +35,7 @@ from app.deps import (
 from app.domain.value_objects.stock_symbol import StockSymbol
 from app.ports.retriever_port import RetrievalQuery
 from evals import schemas
-from evals.judge import JUDGE_MODEL, judge_summary
+from evals.judge import JUDGE_MODEL, judge_summary, judge_summary_multi
 
 EVAL_DIR = Path(__file__).parent
 GOLDEN_SET = EVAL_DIR / "golden_set.jsonl"
@@ -115,7 +115,8 @@ async def evaluate_one(
         )
 
     ai = await llm.generate_stock_summary(symbol=symbol, stock_name=item.stock_name, news=news)
-    verdict = await judge_summary(
+    judge_fn = judge_summary_multi if settings.judge_multi_enabled else judge_summary
+    verdict = await judge_fn(
         symbol=item.symbol,
         stock_name=item.stock_name,
         summary=ai.summary,
@@ -174,6 +175,22 @@ def aggregate(records: list[schemas.EvalRecord]) -> dict[str, Any]:
         }
     )
 
+    # 다중 judge — 두 모델 간 disagreement 평균/최대. 편향 진단 지표.
+    if any(r.judge.per_model for r in judged):
+        base.update(
+            {
+                "groundedness_disagreement_mean": round(
+                    statistics.mean(r.judge.groundedness_disagreement for r in judged), 3
+                ),
+                "groundedness_disagreement_max": round(
+                    max(r.judge.groundedness_disagreement for r in judged), 3
+                ),
+                "hallucination_disagreement_mean": round(
+                    statistics.mean(r.judge.hallucination_count_disagreement for r in judged), 3
+                ),
+            }
+        )
+
     # tier 별 세부 집계
     tiers: dict[str, list[schemas.EvalRecord]] = {}
     for r in judged:
@@ -207,10 +224,15 @@ async def main() -> None:
         raise SystemExit("ANTHROPIC_API_KEY / OPENAI_API_KEY 환경변수 필요")
 
     items = load_golden(args.golden)
+    judge_label = (
+        f"multi: {JUDGE_MODEL} + {settings.opus_judge_model}"
+        if settings.judge_multi_enabled
+        else JUDGE_MODEL
+    )
     print(
         f"[eval] {len(items)} items | label={args.label} | top_k={args.top_k} | "
         f"days_window={args.days_window} | llm={settings.anthropic_model} | "
-        f"judge={JUDGE_MODEL} x{settings.judge_repeat}"
+        f"judge={judge_label} x{settings.judge_repeat}"
     )
 
     await open_pool()
@@ -227,11 +249,16 @@ async def main() -> None:
             if rec.judge is not None:
                 j = rec.judge
                 retry_tag = " [RETRY]" if j.retry_triggered else ""
+                multi_tag = (
+                    f" disagree={j.groundedness_disagreement}/{j.hallucination_count_disagreement}"
+                    if j.per_model
+                    else ""
+                )
                 print(
                     f"    src={rec.source_count} breakdown={rec.source_breakdown} "
                     f"grounded={j.groundedness}±{j.groundedness_std} "
                     f"cite={j.citation_accuracy} halluc={j.hallucination_count} "
-                    f"cov={j.coverage} runs={j.judge_runs}{retry_tag}"
+                    f"cov={j.coverage} runs={j.judge_runs}{retry_tag}{multi_tag}"
                 )
             elif rec.ok:
                 print("    (뉴스 0건 — judge 스킵)")
@@ -249,7 +276,7 @@ async def main() -> None:
         top_k=args.top_k,
         days_window=args.days_window,
         llm_model=settings.anthropic_model,
-        judge_model=JUDGE_MODEL,
+        judge_model=judge_label,
         aggregate=aggregate(records),
         records=records,
     )

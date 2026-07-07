@@ -1,0 +1,1206 @@
+{
+  "label": "after-multi-judge",
+  "started_at": "2026-07-07T02:54:31.658706+00:00",
+  "finished_at": "2026-07-07T02:56:55.355274+00:00",
+  "top_k": 5,
+  "days_window": 14,
+  "llm_model": "claude-haiku-4-5",
+  "judge_model": "multi: claude-sonnet-4-6 + claude-opus-4-7",
+  "aggregate": {
+    "count_total": 15,
+    "count_judged": 15,
+    "count_no_news": 0,
+    "count_error": 0,
+    "groundedness_mean": 0.942,
+    "citation_accuracy_mean": 0.949,
+    "hallucination_count_sum": 0,
+    "hallucination_count_mean": 0,
+    "coverage_mean": 0.819,
+    "count_retried": 0,
+    "avg_judge_runs": 6,
+    "groundedness_std_mean": 0.036,
+    "groundedness_disagreement_mean": 0.071,
+    "groundedness_disagreement_max": 0.2,
+    "hallucination_disagreement_mean": 0.333,
+    "by_tier": {
+      "large": {
+        "count": 8,
+        "groundedness_mean": 0.942,
+        "hallucination_count_sum": 0
+      },
+      "mid": {
+        "count": 4,
+        "groundedness_mean": 0.944,
+        "hallucination_count_sum": 0
+      },
+      "kosdaq": {
+        "count": 3,
+        "groundedness_mean": 0.942,
+        "hallucination_count_sum": 0
+      }
+    }
+  },
+  "records": [
+    {
+      "symbol": "005930",
+      "stock_name": "삼성전자",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "삼성전자는 메타의 AI 투자 우려로 2일 9.06% 급락했으나 [뉴스 1번, 4번], 3일 글로벌 빅테크의 대규모 AI 투자 지속 소식에 8.22% 상승으로 회복세를 보였습니다 [뉴스 3번]. OECD는 반도체 호황 종료가 시기상조라고 평가했으며 [뉴스 4번], 메모리 호황이 2027년까지 지속될 것으로 전망되고 있습니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "메타 클라우드 사업 구상 보도로 AI 연산 자원 공급 과잉 우려 발생 [뉴스 4번]",
+        "반도체 수요 피크아웃 및 AI 거품론 시장 우려 [뉴스 2번]",
+        "글로벌 빅테크의 지속적인 AI 투자로 회복세 [뉴스 3번]",
+        "메모리 호황이 2027년까지 지속될 것으로 예상 [뉴스 5번]"
+      ],
+      "risk_notes": [
+        "단기 변동성이 큰 상황으로 시장 심리 변화에 따른 추가 조정 가능",
+        "AI 거품론과 반도체 수요 정점 우려 등 상반된 시각 존재",
+        "미국발 글로벌 경제 악재에 재차 영향받을 수 있음"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.NEWSTOMATO.COM": 1,
+        "WWW.KHAN.CO.KR": 1,
+        "WWW.SEGYE.COM": 1,
+        "WWW.TOPSTARNEWS.NET": 1,
+        "WWW.MEGAECONOMY.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 9038,
+      "judge": {
+        "groundedness": 0.96,
+        "citation_accuracy": 0.975,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.865,
+        "notes": "multi-judge | sonnet:median of 3 judges | 주요 내용 충실 반영 | opus:median of 3 judges | 근거 충실, iM증권 매수의견 누락",
+        "judge_runs": 6,
+        "groundedness_std": 0.04,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.92,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.88,
+            "notes": "median of 3 judges | 주요 내용 충실 반영",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 1.0,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.85,
+            "notes": "median of 3 judges | 근거 충실, iM증권 매수의견 누락",
+            "judge_runs": 3,
+            "groundedness_std": 0.009,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.08,
+        "hallucination_count_disagreement": 0
+      }
+    },
+    {
+      "symbol": "000660",
+      "stock_name": "SK하이닉스",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "SK하이닉스는 최근 주가 급락으로 ADR 발행 규모를 45조4500억원에서 43조1400억원으로 축소했습니다 [뉴스 3번, 5번]. 한편 KB증권은 글로벌 AI 투자 확대에 따른 메모리 공급 부족이 2028년까지 이어질 것으로 전망하며 목표주가를 420만원으로 상향 조정했습니다 [뉴스 2번]. 시장에서는 반도체 수요 피크아웃 우려와 AI 거품론이 나오는 가운데, 국내 반도체 산업의 기초체력에 대한 평가는 엇갈리고 있습니다 [뉴스 1번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "ADR 발행 규모를 약 2조3100억원 규모로 축소 [뉴스 3번, 5번]",
+        "KB증권, AI 메모리 수요-공급 불균형에 따른 2028년까지의 공급 부족 전망으로 목표가 420만원 상향 [뉴스 2번]",
+        "최근 주가 변동성 증가로 인한 증권사의 리스크 관리 강화 움직임 [뉴스 4번]",
+        "반도체 수요 피크아웃 우려 vs 기초체력 견고성에 대한 시장 평가 엇갈림 [뉴스 1번]"
+      ],
+      "risk_notes": [
+        "반도체 산업의 수요 정점 도달 가능성에 대한 우려가 제기되고 있습니다",
+        "AI 거품론 등으로 인한 단기 변동성이 클 수 있습니다",
+        "글로벌 경제 상황 변화에 따라 메모리 수급 전망이 달라질 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.KHAN.CO.KR": 1,
+        "WWW.ECONOVILL.COM": 1,
+        "WWW.LIVEBIZ.TODAY": 1,
+        "WWW.G-ENEWS.COM": 2
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 9111,
+      "judge": {
+        "groundedness": 0.975,
+        "citation_accuracy": 0.975,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.9,
+        "notes": "multi-judge | sonnet:median of 3 judges | 뉴스 근거 충실, 허구 없음 | opus:median of 3 judges | 근거 충실, 커버리지 양호",
+        "judge_runs": 6,
+        "groundedness_std": 0.025,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.95,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.9,
+            "notes": "median of 3 judges | 뉴스 근거 충실, 허구 없음",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 1.0,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.9,
+            "notes": "median of 3 judges | 근거 충실, 커버리지 양호",
+            "judge_runs": 3,
+            "groundedness_std": 0.009,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.05,
+        "hallucination_count_disagreement": 0
+      }
+    },
+    {
+      "symbol": "035420",
+      "stock_name": "NAVER",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "NAVER 주가는 7월 3일 장중 195,500원으로 전일 종가 대비 2.20% 하락했으며 [뉴스 1번], 최근 시장 변동성 속에서 고점 대비 약 30% 안팎의 하락세를 보이고 있습니다 [뉴스 2번]. 회사는 주식교환 관련 공시와 지속가능경영보고서 등을 공개하고 있습니다 [뉴스 3번, 4번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "7월 3일 장중 주가 195,500원으로 전일 대비 2.20% 하락 [뉴스 1번]",
+        "고점 대비 약 30% 안팎의 하락세 기록 [뉴스 2번]",
+        "주식교환·이전결정 관련 공시 제출 [뉴스 3번]",
+        "지속가능경영보고서 등 자율공시 공개 [뉴스 4번]"
+      ],
+      "risk_notes": [
+        "시장 전반의 변동성 속에서 단기 가격 변동이 있을 수 있습니다",
+        "기술주와 대형주의 조정장세가 진행 중으로 보입니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.JOONGANGENEWS.COM": 1,
+        "WWW.SEDAILY.COM": 1,
+        "DART": 2,
+        "WWW.ASIATODAY.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 10243,
+      "judge": {
+        "groundedness": 0.915,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [
+          "기술주와 대형주의 조정장세가 진행 중으로 보입니다 - 뉴스에 없는 시장 분석 주장",
+          "기술주와 대형주의 조정장세가 진행 중으로 보입니다 — 뉴스에 없는 시장 분석 주장",
+          "기술주와 대형주의 조정장세가 진행 중으로 보입니다 (뉴스에 없는 '기술주와 대형주의 조정장세' 일반화)"
+        ],
+        "coverage": 0.775,
+        "notes": "multi-judge | sonnet:median of 3 judges | 공시 내용 부족, risk_notes 일부 근거 없음 | opus:median of 3 judges | 근거 충실, 인용 정확",
+        "judge_runs": 6,
+        "groundedness_std": 0.065,
+        "hallucination_count_std": 0.5,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.85,
+            "citation_accuracy": 0.9,
+            "hallucination_count": 1,
+            "hallucination_examples": [
+              "기술주와 대형주의 조정장세가 진행 중으로 보입니다 - 뉴스에 없는 시장 분석 주장",
+              "기술주와 대형주의 조정장세가 진행 중으로 보입니다 — 뉴스에 없는 시장 분석 주장",
+              "기술주와 대형주의 조정장세가 진행 중으로 보입니다 (뉴스에 없는 '기술주와 대형주의 조정장세' 일반화)"
+            ],
+            "coverage": 0.75,
+            "notes": "median of 3 judges | 공시 내용 부족, risk_notes 일부 근거 없음",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 0.98,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.8,
+            "notes": "median of 3 judges | 근거 충실, 인용 정확",
+            "judge_runs": 3,
+            "groundedness_std": 0.021,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.13,
+        "hallucination_count_disagreement": 1
+      }
+    },
+    {
+      "symbol": "035720",
+      "stock_name": "카카오",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "카카오뱅크는 2분기 순이익이 전년 동기 대비 7.8% 증가한 1361억원을 기록해 시장 기대치에 부합할 것으로 전망되며, KB증권은 투자의견 '매수'와 목표주가 3만3000원을 유지했습니다 [뉴스 1, 2번]. 인터넷전문은행의 대면 영업 허용으로 기업금융 확대 기반이 마련되었으며, 카카오뱅크의 기업여신은 3조4030억원으로 전년 동기 대비 50.8% 증가했습니다 [뉴스 3번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "2분기 순이익이 전년 동기 대비 7.8% 증가한 1361억원 기록 예상 [뉴스 2번]",
+        "순이자마진(NIM) 호조로 실적 개선 [뉴스 2번]",
+        "기업여신이 3조4030억원으로 전년 동기 대비 50.8% 증가 [뉴스 3번]",
+        "인터넷전문은행 대면 영업 허용으로 기업금융 확대 가능성 [뉴스 3번]"
+      ],
+      "risk_notes": [
+        "노사 갈등이 지속 중이며 임금협상 결렬로 인한 불확실성 존재",
+        "금융업 규제 변화에 따른 영향 가능성",
+        "시장 금리 변동이 순이자마진에 미칠 수 있는 영향"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.JOSEILBO.COM": 1,
+        "WWW.PRESS9.KR": 1,
+        "WWW.FINOMY.COM": 1,
+        "DART": 1,
+        "WWW.ASIATIME.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 10341,
+      "judge": {
+        "groundedness": 0.85,
+        "citation_accuracy": 0.875,
+        "hallucination_count": 0,
+        "hallucination_examples": [
+          "순이자마진(NIM) 호조로 실적 개선 [뉴스 2번] — 뉴스 2번은 'NIM이 큰 변동 없을 것'이라는 내용으로 'NIM 호조'라는 표현은 뉴스에 없음",
+          "순이자마진(NIM) 호조로 실적 개선 [뉴스 2번] — 뉴스 2번에는 'NIM이 큰...'으로 문장이 잘려 있어 NIM 호조 여부를 직접 확인할 수 없으며, 호조로 단정한 것은 근거 초과 해석",
+          "순이자마진(NIM) 호조로 실적 개선 [뉴스 2번] — 뉴스 2번에는 'NIM이 큰...'으로 문장이 잘려 있어 NIM 호조로 실적 개선이라는 구체적 주장을 직접 뒷받침하지 못함"
+        ],
+        "coverage": 0.725,
+        "notes": "multi-judge | sonnet:median of 3 judges | 카카오 본사 이슈 미반영 | opus:median of 3 judges | 카카오 본사보다 자회사 중심 요약",
+        "judge_runs": 6,
+        "groundedness_std": 0.1,
+        "hallucination_count_std": 0.5,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.75,
+            "citation_accuracy": 0.75,
+            "hallucination_count": 1,
+            "hallucination_examples": [
+              "순이자마진(NIM) 호조로 실적 개선 [뉴스 2번] — 뉴스 2번은 'NIM이 큰 변동 없을 것'이라는 내용으로 'NIM 호조'라는 표현은 뉴스에 없음",
+              "순이자마진(NIM) 호조로 실적 개선 [뉴스 2번] — 뉴스 2번에는 'NIM이 큰...'으로 문장이 잘려 있어 NIM 호조 여부를 직접 확인할 수 없으며, 호조로 단정한 것은 근거 초과 해석",
+              "순이자마진(NIM) 호조로 실적 개선 [뉴스 2번] — 뉴스 2번에는 'NIM이 큰...'으로 문장이 잘려 있어 NIM 호조로 실적 개선이라는 구체적 주장을 직접 뒷받침하지 못함"
+            ],
+            "coverage": 0.65,
+            "notes": "median of 3 judges | 카카오 본사 이슈 미반영",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 0.95,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.8,
+            "notes": "median of 3 judges | 카카오 본사보다 자회사 중심 요약",
+            "judge_runs": 3,
+            "groundedness_std": 0.014,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.2,
+        "hallucination_count_disagreement": 1
+      }
+    },
+    {
+      "symbol": "005380",
+      "stock_name": "현대차",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "현대차는 6월 글로벌 판매 33만8,313대로 전년 동월 대비 5.9% 감소했으나 [뉴스 2번, 3번], 미국 시장에서는 상반기 역대 최대 실적인 92만383대를 기록했습니다 [뉴스 4번]. 주가는 48만5,500원대에서 견조한 매수세를 보이고 있으며 [뉴스 1번], 회사는 하반기 신차 출시와 생산·판매 최적화 전략으로 시장 대응력을 높일 계획입니다 [뉴스 3번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "6월 글로벌 판매 5.9% 감소로 판매 부진 [뉴스 2번, 3번]",
+        "미국 시장 상반기 판매 92만383대로 역대 최대 실적 달성 [뉴스 4번]",
+        "국내 판매 6.2%, 해외 판매 5.8% 감소 [뉴스 2번]",
+        "하반기 신차 출시와 생산·판매 최적화 전략 추진 중 [뉴스 3번]",
+        "영남권 42조 투자 계획으로 AI·자율주행·우주 거점 육성 [뉴스 5번]"
+      ],
+      "risk_notes": [
+        "글로벌 판매 부진으로 단기 실적 부담이 있을 수 있습니다",
+        "노사협상 이슈가 진행 중으로 추가 변수가 될 수 있습니다",
+        "지역별로 판매 실적의 편차가 크게 나타나고 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.JOB-POST.CO.KR": 1,
+        "WWW.UJEIL.COM": 1,
+        "WWW.ULSANPRESS.NET": 1,
+        "WWW.IDAEGU.CO.KR": 1,
+        "WWW.HANKYUNG.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 7886,
+      "judge": {
+        "groundedness": 0.975,
+        "citation_accuracy": 0.975,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.9,
+        "notes": "multi-judge | sonnet:median of 3 judges | 뉴스 근거 충실, 투자권유 없음 | opus:median of 3 judges | 근거 충실, 핵심 잘 반영",
+        "judge_runs": 6,
+        "groundedness_std": 0.025,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.95,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.9,
+            "notes": "median of 3 judges | 뉴스 근거 충실, 투자권유 없음",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 1.0,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.9,
+            "notes": "median of 3 judges | 근거 충실, 핵심 잘 반영",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.05,
+        "hallucination_count_disagreement": 0
+      }
+    },
+    {
+      "symbol": "373220",
+      "stock_name": "LG에너지솔루션",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "LG에너지솔루션은 최근 코스피 조정 속에서 상대적으로 소폭 상승했으나 [뉴스 1번, 3번], 배터리 업황 둔화로 인한 어려움을 겪고 있습니다 [뉴스 2번]. 한편 혼다와의 미국 합작 배터리 공장이 본격 가동을 시작하여 ESS용 배터리를 양산하고 있습니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "배터리 업황 둔화로 분기 적자 기록 [뉴스 2번]",
+        "혼다 미국 합작공장 본격 가동, ESS용 배터리 양산 개시 [뉴스 5번]",
+        "중국 동박사 미국 상장 추진으로 글로벌 배터리 시장 경쟁 심화 [뉴스 4번]"
+      ],
+      "risk_notes": [
+        "배터리 업계 전반적인 경기 둔화로 인한 수익성 악화 위험",
+        "미국 전기차 시장 침체에 따른 수요 부진",
+        "글로벌 배터리 제조사 간 경쟁 심화",
+        "투자 공약과 실제 실행 간 차이 가능성"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SISAFOCUS.CO.KR": 1,
+        "WWW.EKN.KR": 1,
+        "WWW.ECONONEWS.CO.KR": 1,
+        "WWW.ECONOVILL.COM": 1,
+        "WWW.NEWS1.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 9215,
+      "judge": {
+        "groundedness": 0.935,
+        "citation_accuracy": 0.915,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.825,
+        "notes": "multi-judge | sonnet:median of 3 judges | 핵심 내용 충실히 반영 | opus:median of 3 judges | 근거 충실, 핵심 반영 양호",
+        "judge_runs": 6,
+        "groundedness_std": 0.015,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.92,
+            "citation_accuracy": 0.93,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.85,
+            "notes": "median of 3 judges | 핵심 내용 충실히 반영",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 0.95,
+            "citation_accuracy": 0.9,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.8,
+            "notes": "median of 3 judges | 근거 충실, 핵심 반영 양호",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.03,
+        "hallucination_count_disagreement": 0
+      }
+    },
+    {
+      "symbol": "068270",
+      "stock_name": "셀트리온",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "셀트리온은 2026년 2분기에 매출 1조3000억원, 영업이익 4300억원을 기록하여 역대 최대 분기 실적을 달성했습니다 [뉴스 2번, 3번, 4번]. 신규 제품 매출 비중이 60%를 넘으며 주력 제품의 안정적 판매와 수익성 개선이 이루어졌으나, 증권가는 하반기 성장 지속 가능성을 인정하면서도 목표주가를 잇달아 낮추고 있습니다 [뉴스 2번, 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "2분기 영업이익 4300억원으로 전년 대비 77% 증가 [뉴스 3번]",
+        "신규 제품 매출 비중이 60% 이상으로 확대 [뉴스 5번]",
+        "합병 비용 해소와 고원가 재고 소진 효과로 수익성 개선 [뉴스 5번]",
+        "주력 제품의 안정적 판매 지속 [뉴스 4번]"
+      ],
+      "risk_notes": [
+        "호실적에도 불구하고 증권가의 목표주가 하향 조정이 이루어지고 있어 시장 평가와 괴리 가능성",
+        "신규 제품 비중 확대에 따른 시장 수용도 불확실성",
+        "하반기 실적 지속 가능성에 대한 변수 존재"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "ECONOMIST.CO.KR": 1,
+        "WWW.IMINJU.NET": 1,
+        "WWW.ASIATIME.CO.KR": 1,
+        "NEWS.DEALSITETV.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 7985,
+      "judge": {
+        "groundedness": 0.95,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.865,
+        "notes": "multi-judge | sonnet:median of 3 judges | 뉴스 근거 충실, 과장 없음 | opus:median of 3 judges | 핵심 실적·증권가 반응 잘 반영",
+        "judge_runs": 6,
+        "groundedness_std": 0.03,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.92,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.88,
+            "notes": "median of 3 judges | 뉴스 근거 충실, 과장 없음",
+            "judge_runs": 3,
+            "groundedness_std": 0.014,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 0.98,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.85,
+            "notes": "median of 3 judges | 핵심 실적·증권가 반응 잘 반영",
+            "judge_runs": 3,
+            "groundedness_std": 0.009,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.06,
+        "hallucination_count_disagreement": 0
+      }
+    },
+    {
+      "symbol": "005490",
+      "stock_name": "POSCO홀딩스",
+      "tier": "large",
+      "ok": true,
+      "error": null,
+      "summary": "POSCO홀딩스는 철강 스프레드 확대와 가격 인상 추진으로 영업실적 개선이 예상되고 있습니다 [뉴스 2번]. 3분기 영업이익이 전 분기 대비 29.7% 증가한 8942억원으로 전망되는 한편 [뉴스 2번], 모듈러 건축용 고강도 철강 소재 공급 경쟁력도 부각되고 있습니다 [뉴스 4번]. 다만 2분기 실적이 시장 예상치를 밑돌 가능성이 제시되고 있습니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "철강 스프레드 확대 및 하반기 공격적인 가격 인상 추진 [뉴스 2번]",
+        "3분기 영업이익 8942억원으로 전 분기 대비 29.7% 증가 예상 [뉴스 2번]",
+        "중장기 사업 포트폴리오 전환 및 재무전략 담은 장래사업·경영계획 공시 [뉴스 3번]",
+        "모듈러 건축용 고강도 철강 소재 공급 경쟁력 부각 [뉴스 4번]",
+        "2분기 실적이 시장 예상치를 밑돌 가능성 [뉴스 5번]"
+      ],
+      "risk_notes": [
+        "2분기 실적 부진으로 단기 변동성이 있을 수 있습니다",
+        "경기 민감주로서 전반적인 시장 환경 변화에 영향을 받을 수 있습니다",
+        "3분기 실적 개선이 예상이므로 실제 결과와 상이할 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.NEWSPRIME.CO.KR": 1,
+        "WWW.KDPRESS.CO.KR": 1,
+        "WWW.PINPOINTNEWS.CO.KR": 1,
+        "WWW.CHOICENEWS.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 9524,
+      "judge": {
+        "groundedness": 0.975,
+        "citation_accuracy": 0.975,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.875,
+        "notes": "multi-judge | sonnet:median of 3 judges | 뉴스 근거 충실, 공시내용 일부 미반영 | opus:median of 3 judges | 근거 충실, 커버리지 양호",
+        "judge_runs": 6,
+        "groundedness_std": 0.025,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.95,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.85,
+            "notes": "median of 3 judges | 뉴스 근거 충실, 공시내용 일부 미반영",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 1.0,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.9,
+            "notes": "median of 3 judges | 근거 충실, 커버리지 양호",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.05,
+        "hallucination_count_disagreement": 0
+      }
+    },
+    {
+      "symbol": "012450",
+      "stock_name": "한화에어로스페이스",
+      "tier": "mid",
+      "ok": true,
+      "error": null,
+      "summary": "한화에어로스페이스는 최근 거래량 중심으로 4.12% 상승했으며 [뉴스 1번], 2분기 실적으로 매출 7조1524억원, 영업이익 1조224억원의 호성적이 유력한 것으로 예상됩니다 [뉴스 2번]. 또한 KAI 지분 7.61%를 확보하여 한화그룹의 방산·우주항공 사업 강화 의지를 보이고 있습니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "주가 4.12% 상승 [뉴스 1번]",
+        "2분기 매출 7조1524억원, 영업이익 1조224억원 호성적 유력 [뉴스 2번]",
+        "KAI 지분 7.61% 확보, 한화그룹 총 지분율 10.15% [뉴스 5번]"
+      ],
+      "risk_notes": [
+        "2분기 실적은 유력 예상치이며 확정 수치가 아닙니다",
+        "방산·우주항공 부문의 수주 및 수익성 변동 가능성",
+        "단기 변동성이 있을 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.ASIATIME.CO.KR": 1,
+        "DART": 2,
+        "WWW.GNNEWS.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 12509,
+      "judge": {
+        "groundedness": 0.975,
+        "citation_accuracy": 0.975,
+        "hallucination_count": 0,
+        "hallucination_examples": [
+          "거래량 중심으로 4.12% 상승 (뉴스 1번에는 '거래량 중심'이라는 표현 없음)",
+          "거래량 중심으로 4.12% 상승했으며 - 뉴스에 '거래량 중심'이라는 표현 없음",
+          "거래량 중심으로 4.12% 상승 ('거래량 중심'은 뉴스에 없는 표현)"
+        ],
+        "coverage": 0.775,
+        "notes": "multi-judge | sonnet:median of 3 judges | 핵심사실 충실, 거래량 표현 오류 | opus:median of 3 judges | 근거 명확, 커버리지 양호",
+        "judge_runs": 6,
+        "groundedness_std": 0.025,
+        "hallucination_count_std": 0.5,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.95,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 1,
+            "hallucination_examples": [
+              "거래량 중심으로 4.12% 상승 (뉴스 1번에는 '거래량 중심'이라는 표현 없음)",
+              "거래량 중심으로 4.12% 상승했으며 - 뉴스에 '거래량 중심'이라는 표현 없음",
+              "거래량 중심으로 4.12% 상승 ('거래량 중심'은 뉴스에 없는 표현)"
+            ],
+            "coverage": 0.75,
+            "notes": "median of 3 judges | 핵심사실 충실, 거래량 표현 오류",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 1.0,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.8,
+            "notes": "median of 3 judges | 근거 명확, 커버리지 양호",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.05,
+        "hallucination_count_disagreement": 1
+      }
+    },
+    {
+      "symbol": "034020",
+      "stock_name": "두산에너빌리티",
+      "tier": "mid",
+      "ok": true,
+      "error": null,
+      "summary": "두산에너빌리티는 7월 3일 장중 3~5% 정도의 낙폭을 기록했으며, 낙폭을 일부 만회하며 8만 4천 원대에서 관망세를 보였습니다 [뉴스 1번, 2번, 3번]. 상반기 외국인은 AI 데이터센터 확산에 따른 전력 수요 증가와 원전 투자 확대 기대에 따라 약 1조 7000억원을 순매수했습니다 [뉴스 5번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "장중 낙폭 후 부분 회복하며 약세 흐름 지속 [뉴스 1번, 2번, 3번]",
+        "최근 단기 상승에 따른 차익실현 매물 출회 [뉴스 2번]",
+        "상반기 외국인 순매수 2위 (1조 7000억원) [뉴스 5번]",
+        "AI 데이터센터 확산과 원전 투자 확대 기대가 매수 요인 [뉴스 5번]"
+      ],
+      "risk_notes": [
+        "단기적 변동성이 크게 나타나고 있습니다",
+        "차익실현 매물의 지속적 출회로 약세 압력이 있을 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.JOB-POST.CO.KR": 1,
+        "WWW.NEWSIS.COM": 2,
+        "BIZ.HERALDCORP.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 9079,
+      "judge": {
+        "groundedness": 0.95,
+        "citation_accuracy": 0.975,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.85,
+        "notes": "multi-judge | sonnet:median of 3 judges | 뉴스 근거 충실, 투자권유 없음 | opus:median of 3 judges | 근거 충실, 커버리지 양호",
+        "judge_runs": 6,
+        "groundedness_std": 0.0,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.95,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.85,
+            "notes": "median of 3 judges | 뉴스 근거 충실, 투자권유 없음",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 0.95,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.85,
+            "notes": "median of 3 judges | 근거 충실, 커버리지 양호",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.0,
+        "hallucination_count_disagreement": 0
+      }
+    },
+    {
+      "symbol": "066570",
+      "stock_name": "LG전자",
+      "tier": "mid",
+      "ok": true,
+      "error": null,
+      "summary": "LG전자 주가가 한 달여 만에 50% 넘게 하락한 가운데 [뉴스 1번], 7일 2분기 잠정실적 발표가 주목되고 있습니다. 하나증권은 미국 관세 환급 효과에 따른 시장 예상 상회 실적을 예측하며 목표가를 26만원으로 상향했으며 [뉴스 2번, 3번, 4번], 하반기 데이터센터 냉각 수요도 긍정 요인으로 제시했습니다 [뉴스 4번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "2분기 잠정실적 발표 예정 (7월 7일) [뉴스 1번]",
+        "미국 관세 환급 효과로 시장 기대치 상회 실적 예상 [뉴스 3번, 4번]",
+        "하나증권 목표가 26만원 상향 (기존 23만원) [뉴스 2번, 3번]",
+        "판가 인상과 원가 효율화로 수익성 방어 [뉴스 4번]",
+        "하반기 데이터센터 냉각 수요 기대 [뉴스 2번, 4번]"
+      ],
+      "risk_notes": [
+        "최근 주가가 급락한 상황으로 변동성이 높을 수 있음",
+        "실적 발표 후 시장 예상과의 괴리 시 추가 변동 가능성",
+        "관세 환급은 일회성 요인으로 지속성 평가 필요",
+        "거시경제 불확실성과 환율 변동의 영향"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.HANKYUNG.COM": 1,
+        "WWW.TOPSTARNEWS.NET": 1,
+        "WWW.NEWSQUEST.CO.KR": 1,
+        "WWW.THEPOWERNEWS.CO.KR": 1,
+        "DART": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 8720,
+      "judge": {
+        "groundedness": 0.95,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.875,
+        "notes": "multi-judge | sonnet:median of 3 judges | 뉴스 근거 충실, 투자권유 없음 | opus:median of 3 judges | 근거 충실, 핵심 반영",
+        "judge_runs": 6,
+        "groundedness_std": 0.03,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.92,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.85,
+            "notes": "median of 3 judges | 뉴스 근거 충실, 투자권유 없음",
+            "judge_runs": 3,
+            "groundedness_std": 0.014,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 0.98,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.9,
+            "notes": "median of 3 judges | 근거 충실, 핵심 반영",
+            "judge_runs": 3,
+            "groundedness_std": 0.009,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.06,
+        "hallucination_count_disagreement": 0
+      }
+    },
+    {
+      "symbol": "207940",
+      "stock_name": "삼성바이오로직스",
+      "tier": "mid",
+      "ok": true,
+      "error": null,
+      "summary": "삼성바이오로직스는 국내 의약품 수출액 증가 소식에 바이오주 강세 흐름을 타며 140만원대에서 보합세를 유지하고 있습니다 [뉴스 2번]. 2분기 호실적 전망에도 불구하고 목표주가가 하향 조정되었으며, 공장 풀가동과 환율 효과로 외형 성장은 달성했으나 대형 신규 수주 공백과 노사 이슈 등이 제약 요인으로 작용하고 있습니다 [뉴스 3번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "국내 의약품 수출액 증가로 바이오주 강세 흐름 형성 [뉴스 2번]",
+        "2분기 공장 풀가동과 환율 효과로 외형 성장 달성 [뉴스 3번]",
+        "대형 신규 수주 공백과 노사 리스크 존재 [뉴스 3번]",
+        "목표주가 하향 조정으로 경영진 리스크 관리 능력 평가 재검토 [뉴스 3번]"
+      ],
+      "risk_notes": [
+        "신규 수주 공백으로 향후 성장성 제약 가능성",
+        "노사 관계 리스크가 경영 안정성에 미칠 영향",
+        "목표주가 하향 조정은 추가 조정 가능성 시사",
+        "외국인 매도세 지속 시 주가 변동성 증가 가능"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.POLINEWS.CO.KR": 1,
+        "WWW.BUSAN.COM": 1,
+        "DART": 1,
+        "WWW.NSPNA.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 11439,
+      "judge": {
+        "groundedness": 0.9,
+        "citation_accuracy": 0.95,
+        "hallucination_count": 0,
+        "hallucination_examples": [
+          "외국인 매도세 지속 시 주가 변동성 증가 가능 - 외국인 매도세는 뉴스2에 언급되나 삼성바이오로직스와 직접 연결된 근거 없음, risk_notes에서 삼성바이오 특정 리스크로 확장한 것은 뉴스 근거 부족",
+          "외국인 매도세 지속 시 주가 변동성 증가 가능 - 외국인 매도세는 뉴스2에서 코스피 전반 언급이나 삼성바이오 특정 연관은 근거 없음",
+          "외국인 매도세 지속 시 주가 변동성 증가 가능 — 외국인 매도세 언급은 뉴스 2번에 있으나, 이를 삼성바이오로직스 특정 리스크로 연결한 것은 뉴스에 없는 추론"
+        ],
+        "coverage": 0.825,
+        "notes": "multi-judge | sonnet:median of 3 judges | 핵심 내용 잘 반영, 근거 대체로 충실 | opus:median of 3 judges | 근거 충실, 인용 정확",
+        "judge_runs": 6,
+        "groundedness_std": 0.05,
+        "hallucination_count_std": 0.5,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.85,
+            "citation_accuracy": 0.9,
+            "hallucination_count": 1,
+            "hallucination_examples": [
+              "외국인 매도세 지속 시 주가 변동성 증가 가능 - 외국인 매도세는 뉴스2에 언급되나 삼성바이오로직스와 직접 연결된 근거 없음, risk_notes에서 삼성바이오 특정 리스크로 확장한 것은 뉴스 근거 부족",
+              "외국인 매도세 지속 시 주가 변동성 증가 가능 - 외국인 매도세는 뉴스2에서 코스피 전반 언급이나 삼성바이오 특정 연관은 근거 없음",
+              "외국인 매도세 지속 시 주가 변동성 증가 가능 — 외국인 매도세 언급은 뉴스 2번에 있으나, 이를 삼성바이오로직스 특정 리스크로 연결한 것은 뉴스에 없는 추론"
+            ],
+            "coverage": 0.8,
+            "notes": "median of 3 judges | 핵심 내용 잘 반영, 근거 대체로 충실",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 0.95,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.85,
+            "notes": "median of 3 judges | 근거 충실, 인용 정확",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.1,
+        "hallucination_count_disagreement": 1
+      }
+    },
+    {
+      "symbol": "247540",
+      "stock_name": "에코프로비엠",
+      "tier": "kosdaq",
+      "ok": true,
+      "error": null,
+      "summary": "에코프로비엠은 미국 반도체 쇼크 여파로 최근 3거래일 연속 급락하여 연저점을 경신했습니다 [뉴스 2번]. 7월 2일 -5.43%, 7월 3일 -7.25% 등 낙폭이 커졌으며 [뉴스 1번, 3번], 이차전지 업종 전반의 부진 속에서 대규모 유상증자 결정이 투자심리를 악화시킨 것으로 보입니다 [뉴스 2번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "미국 반도체주 급락에 따른 시장 전반의 낙폭 영향 [뉴스 1번, 4번]",
+        "이차전지 업종 전반의 연내 주가 부진이 계속되는 상황 [뉴스 2번]",
+        "대규모 유상증자 결정에 따른 투자심리 악화 [뉴스 2번]",
+        "3거래일 연속 급락으로 연저점 경신 [뉴스 2번]"
+      ],
+      "risk_notes": [
+        "글로벌 반도체 시장 변동성에 따른 단기 변동성 가능성",
+        "이차전지 업종 수급 악화가 지속될 경우 추가 낙폭 위험",
+        "대규모 유상증자로 인한 주가 희석 효과 관찰 필요"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.KUKINEWS.COM": 1,
+        "WWW.MT.CO.KR": 1,
+        "WWW.TOKENPOST.KR": 1,
+        "WWW.FINOMY.COM": 1,
+        "WWW.NEWSWORKS.CO.KR": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 11498,
+      "judge": {
+        "groundedness": 0.96,
+        "citation_accuracy": 0.975,
+        "hallucination_count": 0,
+        "hallucination_examples": [
+          "유상증자 규모가 '1.2조'로 뉴스 제목에 언급되나 요약에서는 직접 명시 없이 '대규모'로 표현 — 이는 허용 범위이나, '미국 반도체 쇼크 여파로 최근 3거래일 연속 급락'이라는 인과 연결은 뉴스 2번에서 '이차전지 업종 전반 부진+유상증자'가 주원인으로 제시되어 있어 반도체 쇼크를 연저점 경신의 직접 원인으로 연결한 것은 뉴스 내 근거가 부정확",
+          "글로벌 반도체 시장 변동성에 따른 단기 변동성 가능성 / 이차전지 업종 수급 악화가 지속될 경우 추가 낙폭 위험 / 대규모 유상증자로 인한 주가 희석 효과 관찰 필요 — risk_notes 항목들은 뉴스에 없는 전망·분석으로 사실 주장에 해당",
+          "유상증자 규모를 '1.2조'로 명시하지 않았으나 요약에서 '대규모 유상증자'는 괜찮으나, '미국 반도체 쇼크 여파로 최근 3거래일 연속 급락'이라는 인과 연결은 뉴스2에서 이차전지 업종 부진+유상증자가 원인으로 더 강조되어 있고 반도체 쇼크는 시장 전반 원인으로, 직접적 3거래일 연속 급락 원인으로 단정한 것은 다소 과도한 연결"
+        ],
+        "coverage": 0.86,
+        "notes": "multi-judge | sonnet:median of 3 judges | 주요 사실 잘 반영, 인과관계 약간 과장 | opus:median of 3 judges | 뉴스 근거에 충실한 요약",
+        "judge_runs": 6,
+        "groundedness_std": 0.04,
+        "hallucination_count_std": 0.5,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.92,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 1,
+            "hallucination_examples": [
+              "유상증자 규모가 '1.2조'로 뉴스 제목에 언급되나 요약에서는 직접 명시 없이 '대규모'로 표현 — 이는 허용 범위이나, '미국 반도체 쇼크 여파로 최근 3거래일 연속 급락'이라는 인과 연결은 뉴스 2번에서 '이차전지 업종 전반 부진+유상증자'가 주원인으로 제시되어 있어 반도체 쇼크를 연저점 경신의 직접 원인으로 연결한 것은 뉴스 내 근거가 부정확",
+              "글로벌 반도체 시장 변동성에 따른 단기 변동성 가능성 / 이차전지 업종 수급 악화가 지속될 경우 추가 낙폭 위험 / 대규모 유상증자로 인한 주가 희석 효과 관찰 필요 — risk_notes 항목들은 뉴스에 없는 전망·분석으로 사실 주장에 해당",
+              "유상증자 규모를 '1.2조'로 명시하지 않았으나 요약에서 '대규모 유상증자'는 괜찮으나, '미국 반도체 쇼크 여파로 최근 3거래일 연속 급락'이라는 인과 연결은 뉴스2에서 이차전지 업종 부진+유상증자가 원인으로 더 강조되어 있고 반도체 쇼크는 시장 전반 원인으로, 직접적 3거래일 연속 급락 원인으로 단정한 것은 다소 과도한 연결"
+            ],
+            "coverage": 0.82,
+            "notes": "median of 3 judges | 주요 사실 잘 반영, 인과관계 약간 과장",
+            "judge_runs": 3,
+            "groundedness_std": 0.009,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 1.0,
+            "citation_accuracy": 1.0,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.9,
+            "notes": "median of 3 judges | 뉴스 근거에 충실한 요약",
+            "judge_runs": 3,
+            "groundedness_std": 0.024,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.08,
+        "hallucination_count_disagreement": 1
+      }
+    },
+    {
+      "symbol": "196170",
+      "stock_name": "알테오젠",
+      "tier": "kosdaq",
+      "ok": true,
+      "error": null,
+      "summary": "알테오젠은 최근 코스닥 시총 상위 1위 종목으로서 약세를 나타내고 있습니다 [뉴스 1번]. 7월 2~3일 거래에서 1.82%~5.05% 하락폭을 기록했으며 [뉴스 1번, 5번], 이는 반도체 업종 차익실현 압력 확대 등 시장 전반의 약세에 영향을 받은 것으로 해석됩니다 [뉴스 5번]. 동사는 과거 3조 원 기업가치에서 현재 상당히 성장한 기업으로 평가되고 있습니다 [뉴스 3번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "코스닥 시총 상위 1위 종목으로 7월 2~3일 1.82%~5.05% 하락 [뉴스 1번, 5번]",
+        "반도체 업종 차익실현 압력 확대에 따른 시장 전반 약세에 영향 [뉴스 5번]",
+        "과거 3조 원 기업가치에서 현재 상당히 성장한 기업으로 평가 [뉴스 3번]"
+      ],
+      "risk_notes": [
+        "코스닥 대장주의 코스피 이전 상장 논란이 있으며 시장 변동성이 높을 수 있습니다",
+        "반도체 업종 차익실현 등 시장 전반의 약세 영향에 민감할 수 있습니다",
+        "단기 변동성이 있을 수 있습니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.CBCI.CO.KR": 1,
+        "WWW.MEDICALTIMES.COM": 1,
+        "WWW.SEGYE.COM": 1,
+        "WWW.BETANEWS.NET": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 9172,
+      "judge": {
+        "groundedness": 0.9,
+        "citation_accuracy": 0.875,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.6,
+        "notes": "multi-judge | sonnet:median of 3 judges | 주가하락 중심, 기술수출 미반영 | opus:median of 3 judges | 근거 충실하나 이전상장 이슈 미반영",
+        "judge_runs": 6,
+        "groundedness_std": 0.05,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.85,
+            "citation_accuracy": 0.85,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.6,
+            "notes": "median of 3 judges | 주가하락 중심, 기술수출 미반영",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 0.95,
+            "citation_accuracy": 0.9,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.6,
+            "notes": "median of 3 judges | 근거 충실하나 이전상장 이슈 미반영",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.1,
+        "hallucination_count_disagreement": 0
+      }
+    },
+    {
+      "symbol": "277810",
+      "stock_name": "레인보우로보틱스",
+      "tier": "kosdaq",
+      "ok": true,
+      "error": null,
+      "summary": "레인보우로보틱스는 최근 메타의 AI 투자 우려와 시장 약세 영향으로 연속 하락했습니다 [뉴스 2번, 5번]. 7월 2일 485,000원으로 6.55% 하락 마감했고 [뉴스 4번], 7월 3일에도 47만 2000원으로 2.68% 약세를 나타냈습니다 [뉴스 1번]. 본 요약은 정보 제공 목적이며 투자 권유가 아닙니다.",
+      "key_reasons": [
+        "메타발 AI 투자 의구심으로 장비주가 메모리 반도체와 커플링되며 하락 [뉴스 5번]",
+        "코스닥 시장 전반의 약세 영향 [뉴스 1번, 3번]",
+        "7월 2일 기준 34,000원 낙폭으로 하락세 지속 [뉴스 4번]"
+      ],
+      "risk_notes": [
+        "AI 설비투자에 대한 시장 회의론이 강화될 경우 단기 변동성이 있을 수 있습니다",
+        "글로벌 투자 심리 악화에 따른 추가 낙폭 가능성",
+        "관련 산업 동향과 시장 정서 변화를 지속적으로 모니터링이 필요합니다"
+      ],
+      "source_count": 5,
+      "source_breakdown": {
+        "WWW.SEOUL.CO.KR": 1,
+        "WWW.NEWSTOMATO.COM": 1,
+        "WWW.NEWS1.KR": 1,
+        "WWW.JOONGANGENEWS.COM": 1,
+        "WEEKLY.HANKOOKI.COM": 1
+      },
+      "retrieval_top_k": 5,
+      "elapsed_ms": 7926,
+      "judge": {
+        "groundedness": 0.965,
+        "citation_accuracy": 0.94,
+        "hallucination_count": 0,
+        "hallucination_examples": [],
+        "coverage": 0.775,
+        "notes": "multi-judge | sonnet:median of 3 judges | 뉴스 근거 충실, 투자권유 없음 | opus:median of 3 judges | 뉴스 근거 충실, 주가 흐름 정확",
+        "judge_runs": 6,
+        "groundedness_std": 0.015,
+        "hallucination_count_std": 0.0,
+        "retry_triggered": false,
+        "per_model": {
+          "sonnet": {
+            "groundedness": 0.95,
+            "citation_accuracy": 0.93,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.85,
+            "notes": "median of 3 judges | 뉴스 근거 충실, 투자권유 없음",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          },
+          "opus": {
+            "groundedness": 0.98,
+            "citation_accuracy": 0.95,
+            "hallucination_count": 0,
+            "hallucination_examples": [],
+            "coverage": 0.7,
+            "notes": "median of 3 judges | 뉴스 근거 충실, 주가 흐름 정확",
+            "judge_runs": 3,
+            "groundedness_std": 0.0,
+            "hallucination_count_std": 0.0,
+            "retry_triggered": false,
+            "per_model": {},
+            "groundedness_disagreement": 0.0,
+            "hallucination_count_disagreement": 0.0
+          }
+        },
+        "groundedness_disagreement": 0.03,
+        "hallucination_count_disagreement": 0
+      }
+    }
+  ]
+}

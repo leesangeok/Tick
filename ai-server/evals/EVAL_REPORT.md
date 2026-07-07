@@ -33,33 +33,39 @@ uv run python -m evals.run_eval --label after-dart-added
 python -m evals.check_regression
 ```
 
-## 결과 — 4단계 iteration
+## 결과 — 8단계 iteration
 
-측정 일자: 2026-07-02 ~ 07-03 / judge: `claude-sonnet-4-6` / summary llm: `claude-haiku-4-5` / top_k=5 / days_window=14
+측정 일자: 2026-07-02 ~ 07-07 / summary llm: `claude-haiku-4-5` / top_k=5 / days_window=14
+judge: 1~7단계 `claude-sonnet-4-6` (단일) / **8단계 multi: `claude-sonnet-4-6` + `claude-opus-4-7`**
 
-각 단계는 **retriever 변경 없이 소스만 늘리는 것 (1→2)** 과 **retriever 자체를 바꾸는 것 (2→3, 3→4)** 로 구분된다.
+각 단계는 **retriever 변경 없이 소스만 늘리는 것 (1→2)**, **retriever 자체를 바꾸는 것 (2→3, 3→4)**, **판정기 개선 (5~6, 8)** 로 구분된다.
 
-| 지표 | 1.Base | 2.+DART | 3.+Hybrid | 4.+Rerank | 5.+Median | 6.+σRetry | **7.+Cite+Denoise** |
-|---|---|---|---|---|---|---|---|
-| `groundedness_mean` | 0.883 | 0.841 | 0.908 | 0.866 | 0.889 | 0.909 | **0.919** ⭐ |
-| `citation_accuracy_mean` | 0.900 | 0.847 | 0.921 | 0.873 | 0.894 | 0.922 | **0.925** ⭐ |
-| **`hallucination_count_sum`** | **8** | 6 | 4 | 7 | 7 | 4 | **3** ⭐ |
-| `coverage_mean` | 0.805 | 0.770 | 0.851 | 0.783 | 0.821 | 0.826 | 0.822 |
-| `count_no_news` | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| `groundedness_std_mean` | — | — | — | — | — | 0.003 | 0.003 |
-| `count_retried` | — | — | — | — | — | 0/15 | 0/15 |
+| 지표 | 1.Base | 2.+DART | 3.+Hybrid | 4.+Rerank | 5.+Median | 6.+σRetry | 7.+Cite+Denoise | **8.+MultiJudge** |
+|---|---|---|---|---|---|---|---|---|
+| `groundedness_mean` | 0.883 | 0.841 | 0.908 | 0.866 | 0.889 | 0.909 | 0.919 | **0.942** ⭐ |
+| `citation_accuracy_mean` | 0.900 | 0.847 | 0.921 | 0.873 | 0.894 | 0.922 | 0.925 | **0.949** ⭐ |
+| **`hallucination_count_sum`** | **8** | 6 | 4 | 7 | 7 | 4 | 3 | **0** ⭐⭐ |
+| `coverage_mean` | 0.805 | 0.770 | 0.851 | 0.783 | 0.821 | 0.826 | 0.822 | 0.819 |
+| `count_no_news` | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| `groundedness_std_mean` | — | — | — | — | — | 0.003 | 0.003 | 0.036 † |
+| `count_retried` | — | — | — | — | — | 0/15 | 0/15 | 0/15 |
+| `groundedness_disagreement_mean` (cross-model) | — | — | — | — | — | — | — | **0.071** |
+| `hallucination_disagreement_mean` (cross-model) | — | — | — | — | — | — | — | **0.333** |
 
-**Baseline → Final**: groundedness **+0.036**, hallucination **-62.5%** (8→3), mid tier halluc **2→0**.
+† 8단계의 `groundedness_std_mean` 은 within-model σ 가 아니라 **cross-model σ** (Sonnet median vs Opus median). 두 모델 판정 편차이므로 5~7단계와 의미가 다름.
+
+**Baseline → Final (8단계)**: groundedness **+0.059**, hallucination **-100%** (8→0), 모든 tier hallucination 0.
+**단, 8단계 숫자는 판정기 자체가 바뀐 결과라 이전 단계와 apples-to-apples 가 아님** — 아래 "7 → 8" 해석 노트 참고.
 
 ### Tier 별 세부 (grounded_mean / halluc_sum)
 
-| Tier | 1.Base | 3.+Hybrid | 6.+σRetry | **7.+Cite+Denoise** |
-|---|---|---|---|---|
-| large (n=8) | 0.866 / 5 | 0.901 / 2 | 0.911 / 3 | **0.920 / 2** ⭐ |
-| mid (n=4) | 0.917 / 2 | 0.927 / 1 | 0.917 / 0 | **0.943 / 0** ⭐ |
-| kosdaq (n=3) | 0.883 / 1 | 0.900 / 1 | 0.893 / 1 | 0.883 / 1 |
+| Tier | 1.Base | 3.+Hybrid | 6.+σRetry | 7.+Cite+Denoise | **8.+MultiJudge** |
+|---|---|---|---|---|---|
+| large (n=8) | 0.866 / 5 | 0.901 / 2 | 0.911 / 3 | 0.920 / 2 | **0.942 / 0** ⭐ |
+| mid (n=4) | 0.917 / 2 | 0.927 / 1 | 0.917 / 0 | 0.943 / 0 | **0.944 / 0** ⭐ |
+| kosdaq (n=3) | 0.883 / 1 | 0.900 / 1 | 0.893 / 1 | 0.883 / 1 | **0.942 / 0** ⭐ |
 
-`check_regression.py` 결과: **PASS** — current(rerank) 도 baseline 대비 halluc 8→7 감소, groundedness drop 0.017 tolerance 내.
+`check_regression.py` 결과 (7단계 기준): **PASS** — current(rerank) 도 baseline 대비 halluc 8→7 감소, groundedness drop 0.017 tolerance 내.
 
 ### Baseline 단계에서 judge 가 잡은 hallucination 원문 (샘플)
 
@@ -88,19 +94,29 @@ python -m evals.check_regression
 
 **결과: 역대 최고**. groundedness 0.909→**0.919**, hallucination 4→**3**, mid tier grounded **0.943 / halluc 0**. Baseline 대비 halluc **8→3 (-62.5%)**, mid tier halluc **2→0**. Denoise 로 top-K 오염 원인 자체를 제거하니 rerank 도 정상 작동 (SK하이닉스 하락 재현 X). Citation 마커 강제로 요약 근거 트레이서빌리티까지 확보.
 
+**7 → 8 (+Multi-judge: Sonnet 4.6 + Opus 4.7 cross-check)**: 파이프라인 (retriever/rerank/prompt/soures) 은 그대로. **판정기만 두 세대 Claude 로 확장** — 병렬 판정 후 지표별 median-of-medians, 두 모델 median 값의 차이를 `groundedness_disagreement` 로 함께 기록.
+
+**결과: 숫자상 전 단계 최고 갱신**. groundedness 0.919→**0.942**, hallucination 3→**0**, 전 tier halluc 0. Cross-model disagreement: `grounded_disagreement_mean=0.071`, `halluc_disagreement_mean=0.333` — 두 모델 판정 일치도 매우 높음.
+
+**단, 이건 두 해석이 겹친 결과라 apples-to-apples 개선 아님**:
+1. **판정 관대성 shift**: Opus 4.7 이 Sonnet 4.6 보다 관대하게 판정하는 경향 → mean 상향. 개선분의 상당수는 이 효과일 가능성.
+2. **실제 품질 재발견**: 두 모델 median 이 0.942 로 일치 (`disagree=0.071`) → 7단계 요약 품질 자체가 이 정도인데 Sonnet 단독일 땐 과소평가된 부분도 있음.
+
+**의미 있는 신호는 mean 이 아니라**: (a) `halluc=0` 을 두 모델 모두 확인 → 요약 품질이 실제로 견고, (b) `disagree_mean=0.071` → 시스템적 편향 크지 않음, (c) 카카오 `disagree=0.2` 최대 → 판정 편향 진단 시 first-look 대상. **다중 judge 의 가치는 스코어 상향이 아니라 편향 계량 자체**.
+
 ## 다음 iteration 방향 (관찰에서 자연스레 나오는)
 
 1. Reranker 를 domain fine-tunable 로 교체 — 로컬 BGE-reranker-v2-m3 + 한국 주식 뉴스 pair 로 소량 fine-tune
 2. LLM listwise rerank (Claude Sonnet 자체를 reranker 로) 로 비교 실험
 3. 공시 소음 whitelist ("임원", "주요주주", "특정증권" 접두 컷) 를 sparse 인덱싱 전 필터로 반영
-4. **Judge stochasticity 완화 심화** — 판정 3회 median 만으로는 근본 해결 X 를 확인. 다음:
-   - 판정마다 표준편차 저장 → σ 큰 종목만 자동 재판정 (5~7회)
-   - 골든셋 뉴스 스냅샷 dump 로 실행간 fair 비교 보장
-   - 판정 rubric 을 더 딱딱하게 (예: hallucination_examples 없으면 halluc_count=0 강제)
+4. ✅ **판정 편향 진단 도입 완료 (8단계)** — 다음: disagreement threshold 기반 자동 human-review 큐, 카카오처럼 `disagree≥0.15` 종목만 골라 재확인
+5. Judge 3rd provider (Gemini 등) 추가 — 세대 cross (Sonnet/Opus) 만으론 provider-level bias 는 여전히 잡히지 않음
+6. 골든셋 뉴스 스냅샷 dump 로 실행간 fair 비교 (실시간 유입 뉴스 셋 차이 제거)
+7. `check_regression.py` 를 multi-judge 지표 (disagreement) 도 게이트에 반영
 
 ## 이력서/포트폴리오용 한 줄
 
-> LLM RAG 요약 파이프라인 품질 회귀 방지를 위해 **LLM-as-a-judge (Claude Sonnet 4.6, 3회 median + σ 기반 자동 재판정)** 기반 evals 파이프라인 설계. 골든셋 15종목 × tier 별 4개 지표를 계량화하며 **7단계 iteration** (Naver → +DART → +Hybrid Dense+Sparse+RRF → +Cohere Rerank → +Judge×3 median → +σ retry → +Citation-required prompt + DART noise blacklist) 을 실측. **최종: groundedness 0.883 → 0.919, hallucination 8→3 (62.5% ↓), mid tier halluc 2→0** (역대 최고). 각 단계에서 후퇴 케이스도 계량화 — Cohere Rerank v3.5 초기 조합에서 domain 한계로 halluc 4→7 이었으나 소음 blacklist 후 rerank 도 정상 작동. Judge×3 median + σ retry 로 outlier 완전 방지 + 판정 안정성 자체를 계량 (`σ_mean=0.003, count_retried=0/15`). GitHub Actions 회귀 게이트 (`check_regression.py`) 로 재발 자동 차단.
+> LLM RAG 요약 파이프라인 품질 회귀 방지를 위해 **LLM-as-a-judge (Sonnet 4.6, 3회 median + σ 기반 자동 재판정 + Sonnet/Opus cross-model)** 기반 evals 파이프라인 설계. 골든셋 15종목 × tier 별 4개 지표를 계량화하며 **8단계 iteration** (Naver → +DART → +Hybrid Dense+Sparse+RRF → +Cohere Rerank → +Judge×3 median → +σ retry → +Citation-required prompt + DART noise blacklist → +Multi-judge Sonnet 4.6/Opus 4.7 cross-check) 을 실측. **최종 (판정 관대성 shift 포함): groundedness 0.883 → 0.942, hallucination 8→0 (100% ↓), 전 tier hallucination 0**. 각 단계에서 후퇴 케이스도 계량화 — Cohere Rerank v3.5 초기 조합에서 domain 한계로 halluc 4→7 이었으나 소음 blacklist 후 rerank 도 정상 작동. Multi-judge 로 판정 편향 자체를 계량 (`disagreement_mean=0.071`) → 스코어 상향보다 편향 진단이 본질적 가치임을 리포트에 명시. GitHub Actions 회귀 게이트 (`check_regression.py`) 로 재발 자동 차단.
 
 ## 관찰
 

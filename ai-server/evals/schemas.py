@@ -25,6 +25,12 @@ class JudgeVerdict:
     groundedness_std: float = 0.0
     hallucination_count_std: float = 0.0
     retry_triggered: bool = False
+    # 다중 judge — 두 Claude 모델 (Sonnet 4.6 + Opus 4.7) 로 교차검증한 경우에만 채워짐.
+    # per_model: {"sonnet": JudgeVerdict-dict, "opus": ...}. 상위 필드는 median-of-medians.
+    # groundedness_disagreement 는 두 모델 median 값의 차이 절댓값 (편향 지표).
+    per_model: dict[str, dict[str, Any]] = field(default_factory=dict)
+    groundedness_disagreement: float = 0.0
+    hallucination_count_disagreement: float = 0.0
 
 
 @dataclass

@@ -5,11 +5,16 @@ Summary 생성 모델(Haiku)과 다른 (더 큰) 모델을 쓰는 게 정석. So
 Stochasticity 완화: 같은 입력에도 판정이 흔들리는 걸 (특히 삼성바이오처럼 `grounded=0.0`
 outlier) 완화하기 위해 N회 병렬 호출 후 지표별 median 을 반환한다 (n=settings.judge_repeat).
 Hallucination_examples 는 union, notes 는 median-of-N 명시.
+
+편향(bias) 완충: 같은 모델을 N번 굴려도 systematic bias 는 안 잡힘. `judge_summary_multi`
+는 Claude Sonnet 4.6 + Claude Opus 4.7 두 세대를 병렬 판정 후 median-of-medians 로
+교차검증하며, 두 모델 median 값의 차이를 disagreement 지표로 함께 기록한다.
 """
 
 import asyncio
 import json
 import statistics
+from dataclasses import asdict
 from typing import Any
 
 from anthropic import AsyncAnthropic
@@ -59,33 +64,79 @@ async def judge_summary(
     expected_topics: list[str] | None = None,
     known_traps: list[str] | None = None,
     repeats: int | None = None,
+    provider: str = "sonnet",
 ) -> JudgeVerdict:
     """N회 병렬 판정 후 지표별 median. 판정 편차 (σ) 가 크면 자동으로 extras 회 추가 판정.
 
     Sonnet 4.6 이 같은 입력에도 개별 판정에 상당한 stochasticity 를 보이는 케이스가
     있어 3회 median 만으로는 완전 해결되지 않는다 (NAVER 등). σ 큰 종목만 선택적으로
     재판정하는 게 전체 비용은 유지하면서 안정성을 확보하는 실무적 접근.
+
+    provider: "sonnet" | "opus". 기본 sonnet (하위호환 — 이전 "claude" 도 sonnet 로 매핑).
     """
     n = repeats if repeats is not None else settings.judge_repeat
     args = (
         symbol, stock_name, summary, key_reasons, risk_notes,
         news, expected_topics, known_traps,
     )
+    call = _judge_once_by(provider)
     if n <= 1:
-        return await _judge_once(*args)
+        return await call(*args)
 
-    verdicts = await asyncio.gather(*[_judge_once(*args) for _ in range(n)])
+    verdicts = await asyncio.gather(*[call(*args) for _ in range(n)])
     initial = _aggregate(verdicts)
 
     # 판정 편차 큰 경우 자동 재판정.
     extras = settings.judge_retry_extras
     if extras > 0 and _should_retry(initial):
-        more = await asyncio.gather(*[_judge_once(*args) for _ in range(extras)])
+        more = await asyncio.gather(*[call(*args) for _ in range(extras)])
         verdicts.extend(more)
         retried = _aggregate(verdicts)
         retried.retry_triggered = True
         return retried
     return initial
+
+
+async def judge_summary_multi(
+    symbol: str,
+    stock_name: str,
+    summary: str,
+    key_reasons: list[str],
+    risk_notes: list[str],
+    news: list[RetrievedNews],
+    expected_topics: list[str] | None = None,
+    known_traps: list[str] | None = None,
+) -> JudgeVerdict:
+    """Sonnet 4.6 + Opus 4.7 두 모델을 병렬 판정 → 각 모델 median 후 median-of-medians.
+
+    같은 모델을 N번 굴리면 stochasticity 는 잡히지만 systematic bias 는 그대로 남는다
+    (예: Sonnet 이 특정 표현을 과도하게 관대/엄격하게 판정). 다른 세대의 Claude 를 붙여
+    두 모델의 median 값을 교차검증하고, 그 차이를 disagreement 로 기록해 편향을 계량.
+    OpenAI 는 이 프로젝트에서 embedding 전용이라 chat judge 로는 사용하지 않는다.
+    """
+    kwargs = dict(
+        symbol=symbol,
+        stock_name=stock_name,
+        summary=summary,
+        key_reasons=key_reasons,
+        risk_notes=risk_notes,
+        news=news,
+        expected_topics=expected_topics,
+        known_traps=known_traps,
+    )
+    v_sonnet, v_opus = await asyncio.gather(
+        judge_summary(**kwargs, provider="sonnet"),
+        judge_summary(**kwargs, provider="opus"),
+    )
+    return _combine_across_models(v_sonnet, v_opus)
+
+
+def _judge_once_by(provider: str):
+    if provider in ("sonnet", "claude"):
+        return _judge_once_sonnet
+    if provider == "opus":
+        return _judge_once_opus
+    raise ValueError(f"unknown judge provider: {provider}")
 
 
 def _should_retry(v: JudgeVerdict) -> bool:
@@ -94,7 +145,40 @@ def _should_retry(v: JudgeVerdict) -> bool:
     return v.groundedness_std >= gt or v.hallucination_count_std >= ht
 
 
-async def _judge_once(
+async def _judge_once_sonnet(
+    symbol: str,
+    stock_name: str,
+    summary: str,
+    key_reasons: list[str],
+    risk_notes: list[str],
+    news: list[RetrievedNews],
+    expected_topics: list[str] | None,
+    known_traps: list[str] | None,
+) -> JudgeVerdict:
+    return await _anthropic_judge(
+        JUDGE_MODEL,
+        symbol, stock_name, summary, key_reasons, risk_notes, news, expected_topics, known_traps,
+    )
+
+
+async def _judge_once_opus(
+    symbol: str,
+    stock_name: str,
+    summary: str,
+    key_reasons: list[str],
+    risk_notes: list[str],
+    news: list[RetrievedNews],
+    expected_topics: list[str] | None,
+    known_traps: list[str] | None,
+) -> JudgeVerdict:
+    return await _anthropic_judge(
+        settings.opus_judge_model,
+        symbol, stock_name, summary, key_reasons, risk_notes, news, expected_topics, known_traps,
+    )
+
+
+async def _anthropic_judge(
+    model: str,
     symbol: str,
     stock_name: str,
     summary: str,
@@ -109,13 +193,16 @@ async def _judge_once(
         symbol, stock_name, summary, key_reasons, risk_notes, news, expected_topics, known_traps
     )
     resp = await client.messages.create(
-        model=JUDGE_MODEL,
+        model=model,
         max_tokens=JUDGE_MAX_TOKENS,
         system=JUDGE_SYSTEM,
         messages=[{"role": "user", "content": prompt}],
     )
     text = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
-    parsed = _parse_json(text)
+    return _verdict_from_json(_parse_json(text))
+
+
+def _verdict_from_json(parsed: dict[str, Any]) -> JudgeVerdict:
     return JudgeVerdict(
         groundedness=_clamp01(parsed.get("groundedness", 0.0)),
         citation_accuracy=_clamp01(parsed.get("citation_accuracy", 0.0)),
@@ -159,6 +246,44 @@ def _aggregate(verdicts: list[JudgeVerdict]) -> JudgeVerdict:
         groundedness_std=g_std,
         hallucination_count_std=h_std,
         retry_triggered=False,
+    )
+
+
+def _combine_across_models(sonnet: JudgeVerdict, opus: JudgeVerdict) -> JudgeVerdict:
+    """두 모델의 median 결과를 median-of-medians 로 결합 + disagreement 기록."""
+    def med2(a: float, b: float) -> float:
+        return round((a + b) / 2, 3)
+
+    seen: set[str] = set()
+    examples: list[str] = []
+    for v in (sonnet, opus):
+        for e in v.hallucination_examples:
+            if e not in seen:
+                seen.add(e)
+                examples.append(e)
+
+    return JudgeVerdict(
+        groundedness=med2(sonnet.groundedness, opus.groundedness),
+        citation_accuracy=med2(sonnet.citation_accuracy, opus.citation_accuracy),
+        hallucination_count=int((sonnet.hallucination_count + opus.hallucination_count) / 2),
+        hallucination_examples=examples,
+        coverage=med2(sonnet.coverage, opus.coverage),
+        notes=f"multi-judge | sonnet:{sonnet.notes} | opus:{opus.notes}"[:180],
+        judge_runs=sonnet.judge_runs + opus.judge_runs,
+        # 두 모델 각각의 within-model σ 는 개별 verdict 에 남기고,
+        # 상위 필드의 std 는 두 모델 median 값의 편차(cross-model σ) 로 재계산.
+        groundedness_std=round(
+            statistics.pstdev([sonnet.groundedness, opus.groundedness]), 3
+        ),
+        hallucination_count_std=round(
+            statistics.pstdev([sonnet.hallucination_count, opus.hallucination_count]), 3
+        ),
+        retry_triggered=sonnet.retry_triggered or opus.retry_triggered,
+        per_model={"sonnet": asdict(sonnet), "opus": asdict(opus)},
+        groundedness_disagreement=round(abs(sonnet.groundedness - opus.groundedness), 3),
+        hallucination_count_disagreement=abs(
+            sonnet.hallucination_count - opus.hallucination_count
+        ),
     )
 
 
