@@ -1,7 +1,7 @@
 package app.tick.order.adapter.`in`.websocket
 
 import app.tick.auth.AuthPrincipal
-import app.tick.order.adapter.out.broadcast.InProcessOrderBroadcastAdapter
+import app.tick.order.application.OrderEventPublisherPort
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.Authentication
 import org.springframework.stereotype.Component
@@ -26,7 +26,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
  */
 @Component
 class OrderWebSocketHandler(
-    private val broadcast: InProcessOrderBroadcastAdapter,
+    private val broadcast: OrderEventPublisherPort,
 ) : TextWebSocketHandler() {
     private val log = LoggerFactory.getLogger(javaClass)
 

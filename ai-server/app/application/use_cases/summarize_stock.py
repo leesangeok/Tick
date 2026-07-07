@@ -6,6 +6,7 @@ from app.ports.embedding_port import EmbeddingPort
 from app.ports.llm_port import LlmPort
 from app.ports.query_rewrite_port import QueryRewritePort
 from app.ports.retriever_port import NewsRetrieverPort, RetrievalQuery
+from app.ports.sector_fallback_port import SectorFallbackRetrieverPort
 from app.ports.summary_cache_port import SummaryCachePort
 from app.ports.trace_port import TraceEvent, TracePort
 
@@ -34,6 +35,7 @@ class SummarizeStockUseCase:
         trace: TracePort,
         cache: SummaryCachePort,
         query_rewrite: QueryRewritePort,
+        sector_fallback: SectorFallbackRetrieverPort,
     ) -> None:
         self._embedding = embedding
         self._retriever = retriever
@@ -41,6 +43,7 @@ class SummarizeStockUseCase:
         self._trace = trace
         self._cache = cache
         self._query_rewrite = query_rewrite
+        self._sector_fallback = sector_fallback
 
     async def execute(self, command: SummarizeStockCommand) -> StockSummaryResult:
         async with self._trace.span(
@@ -67,10 +70,20 @@ class SummarizeStockUseCase:
 
             news = await self._retrieve_multi(command, variants)
 
+            used_sector_fallback = False
+            if not news:
+                news = await self._sector_fallback.retrieve_sector_peers(
+                    symbol=command.symbol,
+                    top_k=settings.retrieval_top_k,
+                    days_window=settings.retrieval_days_window,
+                )
+                used_sector_fallback = bool(news)
+
             summary = await self._llm.generate_stock_summary(
                 symbol=command.symbol,
                 stock_name=command.stock_name,
                 news=news,
+                is_sector_fallback=used_sector_fallback,
             )
 
             result = StockSummaryResult(summary=summary, retrieved_count=len(news))
@@ -84,6 +97,7 @@ class SummarizeStockUseCase:
                         "news_count": len(news),
                         "summary_chars": len(summary.summary),
                         "query_variants": len(variants),
+                        "sector_fallback": used_sector_fallback,
                     },
                 )
             )

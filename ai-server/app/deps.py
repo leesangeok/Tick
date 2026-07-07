@@ -14,6 +14,7 @@ from app.adapters.query_rewrite.haiku_query_rewrite_adapter import HaikuQueryRew
 from app.adapters.query_rewrite.noop_query_rewrite_adapter import NoOpQueryRewriteAdapter
 from app.adapters.reranker.cohere_reranker_adapter import CohereRerankerAdapter
 from app.adapters.retriever.hybrid_retriever_adapter import HybridNewsRetrieverAdapter
+from app.adapters.retriever.pg_sector_fallback_adapter import PgSectorFallbackAdapter
 from app.adapters.retriever.pgvector_retriever_adapter import PgvectorNewsRetrieverAdapter
 from app.application.use_cases.embed_news import EmbedNewsUseCase
 from app.application.use_cases.summarize_stock import SummarizeStockUseCase
@@ -88,6 +89,11 @@ def _query_rewrite() -> QueryRewritePort:
     return NoOpQueryRewriteAdapter()
 
 
+@lru_cache(maxsize=1)
+def _sector_fallback() -> PgSectorFallbackAdapter:
+    return PgSectorFallbackAdapter(pool=_pool())
+
+
 def get_summarize_stock_use_case() -> SummarizeStockUseCase:
     return SummarizeStockUseCase(
         embedding=_embedding(),
@@ -96,6 +102,7 @@ def get_summarize_stock_use_case() -> SummarizeStockUseCase:
         trace=_trace(),
         cache=_cache(),
         query_rewrite=_query_rewrite(),
+        sector_fallback=_sector_fallback(),
     )
 
 

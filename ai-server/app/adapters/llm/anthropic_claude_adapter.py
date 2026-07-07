@@ -33,9 +33,13 @@ class AnthropicClaudeAdapter:
         }
 
     async def generate_stock_summary(
-        self, symbol: StockSymbol, stock_name: str, news: list[RetrievedNews]
+        self,
+        symbol: StockSymbol,
+        stock_name: str,
+        news: list[RetrievedNews],
+        is_sector_fallback: bool = False,
     ) -> AiSummary:
-        user_prompt = build_user_prompt(symbol.value, stock_name, news)
+        user_prompt = build_user_prompt(symbol.value, stock_name, news, is_sector_fallback)
 
         # system message 에 cache_control 부여 → prompt cache 활성 (Anthropic ephemeral)
         system = SystemMessage(

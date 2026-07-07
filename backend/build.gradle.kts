@@ -34,6 +34,10 @@ dependencies {
 	implementation("org.flywaydb:flyway-database-postgresql")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+	// S3 archive (뉴스 원본 body). archive.enabled=false 면 어댑터 미주입, SDK 는 클래스패스에만.
+	implementation(platform("software.amazon.awssdk:bom:2.29.34"))
+	implementation("software.amazon.awssdk:s3")
+	implementation("software.amazon.awssdk:sts") // EC2 instance profile / OIDC role assume 용
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 	runtimeOnly("org.postgresql:postgresql")

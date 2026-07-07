@@ -3,6 +3,7 @@ package app.tick.order.application
 import app.tick.common.domain.Money
 import app.tick.common.domain.StockCode
 import app.tick.order.domain.Order
+import org.springframework.web.socket.WebSocketSession
 
 interface SaveOrderPort {
     fun save(order: Order): Order
@@ -20,10 +21,18 @@ interface LoadStockSummaryPort {
 
 /**
  * 주문 체결 이벤트 발행. 프론트로 실시간 전송 (WS `/ws/orders`) 이 주된 소비자.
- * OrderService 는 이 port 를 부르기만 하고, 구독자/세션 관리는 adapter 가 담당.
+ *
+ * 구현체 스위치 (`tick.orders.broadcast.mode`):
+ * - `inprocess` (기본) — 단일 JVM 내 memberId → sessions 라우팅.
+ * - `redis` — Redis Pub/Sub 으로 다른 backend 인스턴스에도 전파.
+ *
+ * attach/detach 는 두 구현체 모두 로컬 세션 레지스트리를 갖게 되므로 port 로 승격.
  */
 interface OrderEventPublisherPort {
     fun publish(event: OrderExecutedEvent)
+    fun attach(memberId: Long, session: WebSocketSession)
+    fun detach(memberId: Long, session: WebSocketSession)
+    fun detachAll(session: WebSocketSession)
 }
 
 data class OrderExecutedEvent(

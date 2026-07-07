@@ -4,6 +4,7 @@ import app.tick.market.application.port.out.BroadcastPort
 import app.tick.market.domain.PriceTick
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
@@ -23,6 +24,12 @@ import java.util.concurrent.CopyOnWriteArraySet
  * broadcast 시 세션 send() 는 개별 try/catch 로 감싸서 한 세션 실패가 다른 세션 전파 방해 X.
  */
 @Component
+@ConditionalOnProperty(
+    prefix = "tick.market.broadcast",
+    name = ["mode"],
+    havingValue = "inprocess",
+    matchIfMissing = true,
+)
 class InProcessBroadcastAdapter(
     private val objectMapper: ObjectMapper,
 ) : BroadcastPort {
@@ -30,20 +37,18 @@ class InProcessBroadcastAdapter(
 
     private val symbolToSessions = ConcurrentHashMap<String, CopyOnWriteArraySet<WebSocketSession>>()
 
-    /** 프론트 WS handler 가 subscribe 요청 처리 시 호출. */
-    fun attach(symbol: String, session: WebSocketSession) {
+    override fun attach(symbol: String, session: WebSocketSession) {
         symbolToSessions.getOrPut(symbol) { CopyOnWriteArraySet() }.add(session)
     }
 
-    fun detach(symbol: String, session: WebSocketSession) {
+    override fun detach(symbol: String, session: WebSocketSession) {
         symbolToSessions[symbol]?.let { set ->
             set.remove(session)
             if (set.isEmpty()) symbolToSessions.remove(symbol, set)
         }
     }
 
-    /** 세션 종료 시 모든 심볼에서 정리. */
-    fun detachAll(session: WebSocketSession) {
+    override fun detachAll(session: WebSocketSession) {
         symbolToSessions.forEach { (_, set) -> set.remove(session) }
         symbolToSessions.entries.removeIf { it.value.isEmpty() }
     }

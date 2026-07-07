@@ -3,8 +3,14 @@ package app.tick.order.adapter.out.broadcast
 import app.tick.order.application.OrderEventPublisherPort
 import app.tick.order.application.OrderExecutedEvent
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.data.redis.listener.PatternTopic
+import org.springframework.data.redis.listener.RedisMessageListenerContainer
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
@@ -12,24 +18,21 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
- * 단일 backend 인스턴스 내 in-memory fan-out. market broadcast 와 같은 패턴이지만 fan-out 키가
- * 심볼이 아니라 memberId — 주문은 개인 데이터이므로 본인 세션에만 보낸다.
- *
- * Redis Pub/Sub 로 확장 시 이 클래스를 `RedisOrderBroadcastAdapter` 로 교체.
- * 다중 인스턴스 배포에선 memberId 소유 인스턴스가 다를 수 있으므로 Pub/Sub 필수.
+ * Redis Pub/Sub 기반 주문 이벤트 fan-out. 다중 backend 인스턴스에서 memberId 소유가 어느
+ * 인스턴스인지 몰라도 안전. 각 인스턴스는 자기 로컬 세션에만 delivery.
  */
 @Component
 @ConditionalOnProperty(
     prefix = "tick.orders.broadcast",
     name = ["mode"],
-    havingValue = "inprocess",
-    matchIfMissing = true,
+    havingValue = "redis",
 )
-class InProcessOrderBroadcastAdapter(
+class RedisOrderBroadcastAdapter(
+    private val redisTemplate: StringRedisTemplate,
+    private val listenerContainer: RedisMessageListenerContainer,
     private val objectMapper: ObjectMapper,
 ) : OrderEventPublisherPort {
     private val log = LoggerFactory.getLogger(javaClass)
-
     private val memberIdToSessions = ConcurrentHashMap<Long, CopyOnWriteArraySet<WebSocketSession>>()
 
     override fun attach(memberId: Long, session: WebSocketSession) {
@@ -49,6 +52,31 @@ class InProcessOrderBroadcastAdapter(
     }
 
     override fun publish(event: OrderExecutedEvent) {
+        try {
+            redisTemplate.convertAndSend(CHANNEL, objectMapper.writeValueAsString(event))
+        } catch (e: Exception) {
+            log.warn("redis publish failed orderId={} err={}", event.orderId, e.message)
+        }
+    }
+
+    @PostConstruct
+    fun subscribe() {
+        val adapter = MessageListenerAdapter(this, "onRedisMessage")
+        adapter.afterPropertiesSet()
+        listenerContainer.addMessageListener(adapter, PatternTopic(CHANNEL))
+        log.info("subscribed to redis channel={}", CHANNEL)
+    }
+
+    fun onRedisMessage(body: String, pattern: String) {
+        try {
+            val event: OrderExecutedEvent = objectMapper.readValue(body)
+            deliverLocal(event)
+        } catch (e: Exception) {
+            log.warn("redis order event parse failed pattern={} err={}", pattern, e.message)
+        }
+    }
+
+    private fun deliverLocal(event: OrderExecutedEvent) {
         val sessions = memberIdToSessions[event.memberId] ?: return
         if (sessions.isEmpty()) return
         val payload = try {
@@ -80,5 +108,9 @@ class InProcessOrderBroadcastAdapter(
                 log.debug("send failed sessionId={} err={}", session.id, e.message)
             }
         }
+    }
+
+    companion object {
+        private const val CHANNEL = "orders:executed"
     }
 }

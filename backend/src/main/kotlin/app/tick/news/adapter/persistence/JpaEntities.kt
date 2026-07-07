@@ -24,6 +24,8 @@ class NewsJpaEntity(
     val publishedAt: Instant,
     @Column(name = "content_hash", length = 64, unique = true)
     val contentHash: String,
+    @Column(name = "archive_url", length = 500)
+    val archiveUrl: String? = null,
     @Column(name = "created_at")
     val createdAt: Instant = Instant.now(),
 )
