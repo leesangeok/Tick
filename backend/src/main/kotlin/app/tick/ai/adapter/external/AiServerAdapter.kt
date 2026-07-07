@@ -3,6 +3,7 @@ package app.tick.ai.adapter.external
 import app.tick.ai.application.AiServerPort
 import app.tick.ai.application.AiSummaryResult
 import app.tick.ai.application.EmbedResult
+import app.tick.ai.application.KeyReason
 import app.tick.ai.application.SummarySource
 import app.tick.common.domain.StockCode
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -53,10 +54,11 @@ class AiServerAdapter(
         return AiSummaryResult(
             symbol = res.symbol,
             summary = res.summary,
-            keyReasons = res.keyReasons,
+            keyReasons = res.keyReasons.map { KeyReason(text = it.text, sourceIndices = it.sourceIndices) },
             riskNotes = res.riskNotes,
             sources = res.sources.map {
                 SummarySource(
+                    newsId = it.newsId,
                     title = it.title,
                     source = it.source,
                     sourceUrl = it.sourceUrl,
@@ -79,13 +81,19 @@ class AiServerAdapter(
     private data class SummaryResponse(
         val symbol: String,
         val summary: String,
-        @JsonProperty("key_reasons") val keyReasons: List<String> = emptyList(),
+        @JsonProperty("key_reasons") val keyReasons: List<KeyReasonDto> = emptyList(),
         @JsonProperty("risk_notes") val riskNotes: List<String> = emptyList(),
         val sources: List<SourceDto> = emptyList(),
         @JsonProperty("retrieved_count") val retrievedCount: Int,
     )
 
+    private data class KeyReasonDto(
+        val text: String,
+        @JsonProperty("source_indices") val sourceIndices: List<Int> = emptyList(),
+    )
+
     private data class SourceDto(
+        @JsonProperty("news_id") val newsId: Long,
         val title: String,
         val source: String?,
         @JsonProperty("source_url") val sourceUrl: String?,

@@ -35,6 +35,7 @@ from app.deps import (
 from app.domain.value_objects.stock_symbol import StockSymbol
 from app.ports.retriever_port import RetrievalQuery
 from evals import schemas
+from evals.eval_settings import eval_settings
 from evals.judge import JUDGE_MODEL, judge_summary, judge_summary_multi
 
 EVAL_DIR = Path(__file__).parent
@@ -115,12 +116,13 @@ async def evaluate_one(
         )
 
     ai = await llm.generate_stock_summary(symbol=symbol, stock_name=item.stock_name, news=news)
-    judge_fn = judge_summary_multi if settings.judge_multi_enabled else judge_summary
+    key_reason_texts = [kr.text for kr in ai.key_reasons]
+    judge_fn = judge_summary_multi if eval_settings.judge_multi_enabled else judge_summary
     verdict = await judge_fn(
         symbol=item.symbol,
         stock_name=item.stock_name,
         summary=ai.summary,
-        key_reasons=ai.key_reasons,
+        key_reasons=key_reason_texts,
         risk_notes=ai.risk_notes,
         news=news,
         expected_topics=item.expected_topics,
@@ -133,7 +135,7 @@ async def evaluate_one(
         ok=True,
         error=None,
         summary=ai.summary,
-        key_reasons=ai.key_reasons,
+        key_reasons=key_reason_texts,
         risk_notes=ai.risk_notes,
         source_count=len(news),
         source_breakdown=breakdown,
@@ -225,14 +227,14 @@ async def main() -> None:
 
     items = load_golden(args.golden)
     judge_label = (
-        f"multi: {JUDGE_MODEL} + {settings.opus_judge_model}"
-        if settings.judge_multi_enabled
+        f"multi: {JUDGE_MODEL} + {eval_settings.opus_judge_model}"
+        if eval_settings.judge_multi_enabled
         else JUDGE_MODEL
     )
     print(
         f"[eval] {len(items)} items | label={args.label} | top_k={args.top_k} | "
         f"days_window={args.days_window} | llm={settings.anthropic_model} | "
-        f"judge={judge_label} x{settings.judge_repeat}"
+        f"judge={judge_label} x{eval_settings.judge_repeat}"
     )
 
     await open_pool()

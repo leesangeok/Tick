@@ -11,6 +11,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.adapters.observability.langfuse_callback import langfuse_callback_handler
+from app.application.citation_parser import parse_key_reasons
 from app.application.prompts.stock_summary_prompt import SYSTEM_PROMPT, build_user_prompt
 from app.config.settings import settings
 from app.domain.models.ai_summary import AiSummary
@@ -54,12 +55,19 @@ class AnthropicClaudeAdapter:
         text = content if isinstance(content, str) else self._join_blocks(content)
         parsed = self._parse_json(text)
 
+        sources = AiSummary.sources_from(news)
+        raw_key_reasons = parsed.get("key_reasons", []) or []
+        # LLM 이 문자열 대신 dict 를 반환할 때 방어 — text 필드만 추출.
+        raw_key_reasons = [
+            r if isinstance(r, str) else str(r.get("text", r)) if isinstance(r, dict) else str(r)
+            for r in raw_key_reasons
+        ]
         return AiSummary(
             symbol=symbol.value,
             summary=parsed.get("summary", text.strip()),
-            key_reasons=parsed.get("key_reasons", []),
-            risk_notes=parsed.get("risk_notes", []),
-            sources=AiSummary.sources_from(news),
+            key_reasons=parse_key_reasons(raw_key_reasons, max_source_index=len(sources)),
+            risk_notes=parsed.get("risk_notes", []) or [],
+            sources=sources,
         )
 
     @staticmethod

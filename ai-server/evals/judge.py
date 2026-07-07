@@ -21,6 +21,7 @@ from anthropic import AsyncAnthropic
 
 from app.config.settings import settings
 from app.domain.models.retrieved_news import RetrievedNews
+from evals.eval_settings import eval_settings
 from evals.schemas import JudgeVerdict
 
 JUDGE_MODEL = "claude-sonnet-4-6"
@@ -74,7 +75,7 @@ async def judge_summary(
 
     provider: "sonnet" | "opus". 기본 sonnet (하위호환 — 이전 "claude" 도 sonnet 로 매핑).
     """
-    n = repeats if repeats is not None else settings.judge_repeat
+    n = repeats if repeats is not None else eval_settings.judge_repeat
     args = (
         symbol, stock_name, summary, key_reasons, risk_notes,
         news, expected_topics, known_traps,
@@ -87,7 +88,7 @@ async def judge_summary(
     initial = _aggregate(verdicts)
 
     # 판정 편차 큰 경우 자동 재판정.
-    extras = settings.judge_retry_extras
+    extras = eval_settings.judge_retry_extras
     if extras > 0 and _should_retry(initial):
         more = await asyncio.gather(*[call(*args) for _ in range(extras)])
         verdicts.extend(more)
@@ -140,8 +141,8 @@ def _judge_once_by(provider: str):
 
 
 def _should_retry(v: JudgeVerdict) -> bool:
-    gt = settings.judge_std_threshold_grounded
-    ht = settings.judge_std_threshold_halluc
+    gt = eval_settings.judge_std_threshold_grounded
+    ht = eval_settings.judge_std_threshold_halluc
     return v.groundedness_std >= gt or v.hallucination_count_std >= ht
 
 
@@ -172,7 +173,7 @@ async def _judge_once_opus(
     known_traps: list[str] | None,
 ) -> JudgeVerdict:
     return await _anthropic_judge(
-        settings.opus_judge_model,
+        eval_settings.opus_judge_model,
         symbol, stock_name, summary, key_reasons, risk_notes, news, expected_topics, known_traps,
     )
 
