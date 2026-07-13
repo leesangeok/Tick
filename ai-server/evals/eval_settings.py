@@ -24,11 +24,13 @@ class EvalSettings(BaseSettings):
     judge_std_threshold_halluc: float = 1.0
     judge_retry_extras: int = 4
 
-    # 다중 judge (판정 편향 교차검증). True 면 Sonnet 4.6 + Opus 4.7 두 세대의 Claude 로 병렬
+    # 다중 judge (판정 편향 교차검증). True 면 Sonnet 4.6 + secondary judge 두 모델로 병렬
     # 판정 후 지표별 median-of-medians. 두 모델 간 판정 편차 (disagreement σ) 도 함께 기록.
     # OpenAI 는 이 프로젝트에서 embedding 전용이라 chat judge 로는 사용 X.
+    # 기본 secondary 는 Haiku (비용 안전판). Opus 교차검증 원하면 .env 에
+    # OPUS_JUDGE_MODEL=claude-opus-4-7 로 override. 필드명은 하위호환 유지.
     judge_multi_enabled: bool = False
-    opus_judge_model: str = "claude-opus-4-7"
+    opus_judge_model: str = "claude-haiku-4-5"
 
 
 eval_settings = EvalSettings()
