@@ -22,6 +22,7 @@ class OrderService(
     private val saveHoldingPort: SaveHoldingPort,
     private val saveOrderPort: SaveOrderPort,
     private val loadStockSummaryPort: LoadStockSummaryPort,
+    private val orderEventPublisher: OrderEventPublisherPort,
 ) : CreateOrderUseCase {
 
     @Transactional
@@ -53,7 +54,9 @@ class OrderService(
         saveHoldingPort.save(holding)
         val saved = saveOrderPort.save(order)
 
-        return toResult(saved, stockName)
+        val result = toResult(saved, stockName)
+        publish(command.memberId, result, saved.createdAt)
+        return result
     }
 
     @Transactional
@@ -94,7 +97,30 @@ class OrderService(
         saveHoldingPort.save(holding)
         val saved = saveOrderPort.save(order)
 
-        return toResult(saved, stockName)
+        val result = toResult(saved, stockName)
+        publish(command.memberId, result, saved.createdAt)
+        return result
+    }
+
+    private fun publish(memberId: Long, result: CreateOrderResult, at: Instant) {
+        // 트랜잭션 커밋 전이지만 in-memory publisher 이므로 커밋 실패 시 프론트가 잠깐 잘못된
+        // 상태를 보게 될 수 있다. Redis Pub/Sub 도입 시 TransactionSynchronization 로 커밋 후 발행.
+        orderEventPublisher.publish(
+            OrderExecutedEvent(
+                memberId = memberId,
+                orderId = result.orderId,
+                symbol = result.symbol,
+                stockName = result.stockName,
+                side = result.side,
+                orderType = result.orderType,
+                quantity = result.quantity,
+                price = result.price,
+                totalAmount = result.totalAmount,
+                realizedProfitLoss = result.realizedProfitLoss,
+                status = result.status,
+                at = at.toString(),
+            ),
+        )
     }
 
     private fun toResult(order: Order, stockName: String): CreateOrderResult =

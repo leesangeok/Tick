@@ -13,6 +13,7 @@ object NewsMapper {
         sourceUrl = entity.sourceUrl,
         publishedAt = entity.publishedAt,
         contentHash = entity.contentHash,
+        archiveUrl = entity.archiveUrl,
     )
 
     fun toEntity(domain: News): NewsJpaEntity = NewsJpaEntity(
@@ -24,5 +25,6 @@ object NewsMapper {
         sourceUrl = domain.sourceUrl,
         publishedAt = domain.publishedAt,
         contentHash = domain.contentHash,
+        archiveUrl = domain.archiveUrl,
     )
 }

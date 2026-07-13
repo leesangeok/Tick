@@ -16,6 +16,7 @@ class NewsService(
     private val collectors: List<NewsCollectorPort>,
     private val loadNews: LoadNewsPort,
     private val saveNews: SaveNewsPort,
+    private val archive: NewsArchivePort,
 ) : CollectNewsForSymbolUseCase, GetRecentNewsUseCase {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -34,7 +35,9 @@ class NewsService(
             var savedThisSource = 0
             fetched.forEach { news ->
                 if (!loadNews.existsByContentHash(news.contentHash)) {
-                    saveNews.save(news)
+                    // 아카이빙 결과 URL 을 news 에 세팅한 뒤 저장. NoOp 어댑터면 null 그대로.
+                    val archiveUrl = archive.archive(news)
+                    saveNews.save(news.withArchiveUrl(archiveUrl))
                     savedThisSource++
                 }
             }

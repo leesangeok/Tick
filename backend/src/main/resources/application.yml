@@ -68,6 +68,12 @@ tick:
     page-count: ${TICK_DART_PAGE_COUNT:100}
     # A 정기공시 / B 주요사항 / C 발행공시. D(지분) / E(기타) 는 노이즈 커서 제외.
     include-types: A,B,C
+  news:
+    archive:
+      # true 면 뉴스 body 를 S3 에 업로드하고 news.archive_url 저장. IAM 권한 필요.
+      enabled: ${TICK_NEWS_ARCHIVE_ENABLED:false}
+      s3-bucket: ${TICK_NEWS_ARCHIVE_S3_BUCKET:}
+      s3-region: ${TICK_NEWS_ARCHIVE_S3_REGION:ap-northeast-2}
   cors:
     allowed-origins: http://localhost:3000
   jwt:
@@ -102,9 +108,24 @@ tick:
       quote-ttl-sec: ${KIS_QUOTE_TTL_SEC:30}
       series-ttl-sec: ${KIS_SERIES_TTL_SEC:3600}
       token-ttl-sec: ${KIS_TOKEN_TTL_SEC:82800}
+  schedule:
+    # 사용자 watchlist 종목만 대상. 로컬/개발 환경에서 실수로 외부 API 쿼터 소진하지 않도록 opt-in.
+    news-collect:
+      enabled: ${TICK_SCHEDULE_NEWS_COLLECT_ENABLED:false}
+      # 6시간마다 (00:00, 06:00, 12:00, 18:00 KST).
+      cron: ${TICK_SCHEDULE_NEWS_COLLECT_CRON:0 0 */6 * * *}
+      # 종목당 fetch 상한 — 소스별로 이 값까지만 요청.
+      per-symbol-limit: ${TICK_SCHEDULE_NEWS_COLLECT_LIMIT:20}
+    ai-embedding:
+      enabled: ${TICK_SCHEDULE_AI_EMBEDDING_ENABLED:false}
+      # 매일 새벽 03:30 KST — 뉴스 수집 후에 돌게 (00:00 news → 03:30 embed).
+      cron: ${TICK_SCHEDULE_AI_EMBEDDING_CRON:0 30 3 * * *}
   market:
     # 실시간 시세 WebSocket (KIS). enabled=false 면 KIS WS 미접속 + 프론트 /ws/market 도 미노출.
     enabled: ${TICK_MARKET_ENABLED:true}
+    broadcast:
+      # inprocess (기본, 단일 backend) 또는 redis (다중 인스턴스 Pub/Sub).
+      mode: ${TICK_MARKET_BROADCAST_MODE:inprocess}
     kis:
       # KIS 실시간 WebSocket URL. 실전 ws://ops.koreainvestment.com:21000 / 모의 ws://ops.koreainvestment.com:31000.
       # 지금은 실전 앱키라 실전 URL 사용. approval-url 은 REST base 재사용.
@@ -115,6 +136,10 @@ tick:
       pingpong-timeout-sec: ${KIS_WS_PINGPONG_TIMEOUT_SEC:30}
       # 재연결 backoff (초). 지수 증가하다가 이 값에서 cap.
       reconnect-max-backoff-sec: ${KIS_WS_RECONNECT_MAX_BACKOFF_SEC:60}
+  orders:
+    broadcast:
+      # inprocess (기본) 또는 redis. Redis Pub/Sub 로 memberId 소유 인스턴스와 무관하게 전파.
+      mode: ${TICK_ORDERS_BROADCAST_MODE:inprocess}
 
 spring.data.redis:
   host: ${REDIS_HOST:localhost}

@@ -1,11 +1,17 @@
 from app.application.commands.summarize_stock_command import SummarizeStockCommand
 from app.application.results.stock_summary_result import StockSummaryResult
 from app.config.settings import settings
+from app.domain.models.retrieved_news import RetrievedNews
 from app.ports.embedding_port import EmbeddingPort
 from app.ports.llm_port import LlmPort
+from app.ports.query_rewrite_port import QueryRewritePort
 from app.ports.retriever_port import NewsRetrieverPort, RetrievalQuery
+from app.ports.sector_fallback_port import SectorFallbackRetrieverPort
 from app.ports.summary_cache_port import SummaryCachePort
 from app.ports.trace_port import TraceEvent, TracePort
+
+# variant 간 RRF 병합 상수. hybrid retriever 내부의 RRF (K=60) 와 별개 계층.
+_VARIANT_RRF_K = 60
 
 
 class SummarizeStockUseCase:
@@ -28,12 +34,16 @@ class SummarizeStockUseCase:
         llm: LlmPort,
         trace: TracePort,
         cache: SummaryCachePort,
+        query_rewrite: QueryRewritePort,
+        sector_fallback: SectorFallbackRetrieverPort,
     ) -> None:
         self._embedding = embedding
         self._retriever = retriever
         self._llm = llm
         self._trace = trace
         self._cache = cache
+        self._query_rewrite = query_rewrite
+        self._sector_fallback = sector_fallback
 
     async def execute(self, command: SummarizeStockCommand) -> StockSummaryResult:
         async with self._trace.span(
@@ -51,23 +61,29 @@ class SummarizeStockUseCase:
                 )
                 return cached
 
-            query_text = f"{command.stock_name}({command.symbol.value}) 주가 변동 이유 실적 뉴스"
-            query_embedding = await self._embedding.embed(query_text)
+            base_query = (
+                f"{command.stock_name}({command.symbol.value}) 주가 변동 이유 실적 뉴스"
+            )
+            variants = await self._query_rewrite.rewrite(
+                command.symbol, command.stock_name, base_query
+            )
 
-            news = await self._retriever.retrieve(
-                RetrievalQuery(
+            news = await self._retrieve_multi(command, variants)
+
+            used_sector_fallback = False
+            if not news:
+                news = await self._sector_fallback.retrieve_sector_peers(
                     symbol=command.symbol,
-                    embedding=query_embedding,
                     top_k=settings.retrieval_top_k,
                     days_window=settings.retrieval_days_window,
-                    raw_query_text=query_text,
                 )
-            )
+                used_sector_fallback = bool(news)
 
             summary = await self._llm.generate_stock_summary(
                 symbol=command.symbol,
                 stock_name=command.stock_name,
                 news=news,
+                is_sector_fallback=used_sector_fallback,
             )
 
             result = StockSummaryResult(summary=summary, retrieved_count=len(news))
@@ -80,8 +96,64 @@ class SummarizeStockUseCase:
                         "symbol": command.symbol.value,
                         "news_count": len(news),
                         "summary_chars": len(summary.summary),
+                        "query_variants": len(variants),
+                        "sector_fallback": used_sector_fallback,
                     },
                 )
             )
 
             return result
+
+    async def _retrieve_multi(
+        self, command: SummarizeStockCommand, variants: list[str]
+    ) -> list[RetrievedNews]:
+        """variant 별로 retrieve 한 뒤 variant 간 RRF 로 병합해 top_k 로 자른다.
+
+        hybrid retriever 는 내부에서 dense+sparse RRF (K=60) 를 이미 하므로, 이 층은 그 위에
+        variant 축으로 한 번 더 RRF. 나이 감쇠는 하위 계층에 위임.
+        """
+        # 단일 variant 는 기존 경로 그대로 (오버헤드 0).
+        if len(variants) == 1:
+            embedding = await self._embedding.embed(variants[0])
+            return await self._retriever.retrieve(
+                RetrievalQuery(
+                    symbol=command.symbol,
+                    embedding=embedding,
+                    top_k=settings.retrieval_top_k,
+                    days_window=settings.retrieval_days_window,
+                    raw_query_text=variants[0],
+                )
+            )
+
+        # variant 별 병렬 embedding + retrieve 는 순차로 둔다 — API rate 및 DB pool 보호.
+        # 나중에 필요하면 asyncio.gather 로 전환 가능.
+        per_variant: list[list[RetrievedNews]] = []
+        for text in variants:
+            embedding = await self._embedding.embed(text)
+            per_variant.append(
+                await self._retriever.retrieve(
+                    RetrievalQuery(
+                        symbol=command.symbol,
+                        embedding=embedding,
+                        top_k=settings.retrieval_top_k,
+                        days_window=settings.retrieval_days_window,
+                        raw_query_text=text,
+                    )
+                )
+            )
+
+        return self._variant_rrf_merge(per_variant, settings.retrieval_top_k)
+
+    @staticmethod
+    def _variant_rrf_merge(
+        per_variant: list[list[RetrievedNews]], top_k: int
+    ) -> list[RetrievedNews]:
+        agg: dict[int, tuple[RetrievedNews, float]] = {}
+        for items in per_variant:
+            for rank, item in enumerate(items):
+                prev = agg.get(item.id)
+                score = (prev[1] if prev else 0.0) + 1.0 / (_VARIANT_RRF_K + rank)
+                keep = prev[0] if prev else item
+                agg[item.id] = (keep, score)
+        merged = [item for item, _ in sorted(agg.values(), key=lambda kv: -kv[1])]
+        return merged[:top_k]

@@ -13,7 +13,11 @@ data class News(
     val sourceUrl: String?,
     val publishedAt: Instant,
     val contentHash: String,
+    // 원본 body 를 S3 에 아카이빙한 URL (nullable — 아카이빙 비활성/실패 시 null).
+    val archiveUrl: String? = null,
 ) {
+    fun withArchiveUrl(url: String?): News = copy(archiveUrl = url)
+
     companion object {
         fun newOne(
             stockCode: StockCode,

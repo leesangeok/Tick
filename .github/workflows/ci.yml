@@ -1,6 +1,7 @@
 name: CI
 
-# Frontend 빌드/린트는 Vercel preview 가 담당하므로 여기엔 backend / infra 만.
+# Frontend 빌드는 Vercel preview 가 담당. 여기엔 vitest 유닛 + tsc/eslint 만 추가.
+# 빌드 중복 실행 (Vercel + GH) 은 피하고, CI 대상은 회귀 방어 (tests / typecheck) 로만.
 
 on:
   push:
@@ -21,6 +22,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       ai_server: ${{ steps.filter.outputs.ai_server }}
+      frontend: ${{ steps.filter.outputs.frontend }}
       infra: ${{ steps.filter.outputs.infra }}
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +34,8 @@ jobs:
               - 'backend/**'
             ai_server:
               - 'ai-server/**'
+            frontend:
+              - 'frontend/**'
             infra:
               - 'infrastructure-as-code/**'
 
@@ -92,6 +96,28 @@ jobs:
         run: uv tool run ruff check .
       - name: Build docker image
         run: docker build -t tick-ai-server:ci .
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npx eslint .
+      - name: Vitest
+        run: npm test
 
   infra:
     needs: changes

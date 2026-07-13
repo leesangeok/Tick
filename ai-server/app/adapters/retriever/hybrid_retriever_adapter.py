@@ -10,8 +10,9 @@
 upsert_missing_embeddings 는 원본 pgvector 어댑터에 위임 — 이 어댑터의 역할은 retrieve 뿐.
 """
 
+import math
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pgvector.psycopg import register_vector_async
 from psycopg_pool import AsyncConnectionPool
@@ -37,6 +38,7 @@ class HybridNewsRetrieverAdapter:
         self._reranker = reranker
         self._delegate = embedding_delegate
         self._initial_k = settings.retrieval_initial_k
+        self._freshness_half_life_days = settings.retrieval_freshness_half_life_days
 
     async def retrieve(self, query: RetrievalQuery) -> list[RetrievedNews]:
         dense = await self._dense_retrieve(query)
@@ -137,8 +139,26 @@ class HybridNewsRetrieverAdapter:
             # 같은 id 라도 dense 쪽 인스턴스를 유지 (score 필드 일관성).
             keep = prev[0] if prev else item
             agg[item.id] = (keep, score)
+        self._apply_freshness_decay(agg)
         # RRF 점수 내림차순
         return [item for item, _ in sorted(agg.values(), key=lambda kv: -kv[1])]
+
+    def _apply_freshness_decay(
+        self, agg: dict[int, tuple[RetrievedNews, float]]
+    ) -> None:
+        # 반감기(half-life) 의미: age = N 일 지나면 점수가 정확히 절반.
+        # RRF 만으로는 14일 윈도우 내에서 최신뉴스 우선 순위가 약해서, 급등락 이유 요약이
+        # 오래된 뉴스에 편향되는 문제를 완화한다.
+        if self._freshness_half_life_days <= 0:
+            return
+        now = datetime.now(UTC)
+        for news_id, (item, score) in agg.items():
+            published = item.published_at
+            if published.tzinfo is None:
+                published = published.replace(tzinfo=UTC)
+            age_days = max(0.0, (now - published).total_seconds() / 86400.0)
+            decay = math.pow(2.0, -age_days / self._freshness_half_life_days)
+            agg[news_id] = (item, score * decay)
 
     @staticmethod
     def _row_to_news(row, invert_score: bool = False) -> RetrievedNews:

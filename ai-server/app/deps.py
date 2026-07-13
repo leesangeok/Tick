@@ -10,12 +10,16 @@ from app.adapters.embedding.openai_embedding_adapter import OpenAiEmbeddingAdapt
 from app.adapters.llm.anthropic_claude_adapter import AnthropicClaudeAdapter
 from app.adapters.observability.langfuse_trace_adapter import LangfuseTraceAdapter
 from app.adapters.observability.noop_trace_adapter import NoOpTraceAdapter
+from app.adapters.query_rewrite.haiku_query_rewrite_adapter import HaikuQueryRewriteAdapter
+from app.adapters.query_rewrite.noop_query_rewrite_adapter import NoOpQueryRewriteAdapter
 from app.adapters.reranker.cohere_reranker_adapter import CohereRerankerAdapter
 from app.adapters.retriever.hybrid_retriever_adapter import HybridNewsRetrieverAdapter
+from app.adapters.retriever.pg_sector_fallback_adapter import PgSectorFallbackAdapter
 from app.adapters.retriever.pgvector_retriever_adapter import PgvectorNewsRetrieverAdapter
 from app.application.use_cases.embed_news import EmbedNewsUseCase
 from app.application.use_cases.summarize_stock import SummarizeStockUseCase
 from app.config.settings import settings
+from app.ports.query_rewrite_port import QueryRewritePort
 from app.ports.reranker_port import RerankerPort
 from app.ports.summary_cache_port import SummaryCachePort
 from app.ports.trace_port import TracePort
@@ -77,6 +81,19 @@ def _cache() -> SummaryCachePort:
     return NoOpSummaryCacheAdapter()
 
 
+@lru_cache(maxsize=1)
+def _query_rewrite() -> QueryRewritePort:
+    # 재작성 활성 + Anthropic key 있으면 Haiku, 아니면 NoOp (base_query 그대로).
+    if settings.query_rewrite_enabled and settings.anthropic_api_key:
+        return HaikuQueryRewriteAdapter()
+    return NoOpQueryRewriteAdapter()
+
+
+@lru_cache(maxsize=1)
+def _sector_fallback() -> PgSectorFallbackAdapter:
+    return PgSectorFallbackAdapter(pool=_pool())
+
+
 def get_summarize_stock_use_case() -> SummarizeStockUseCase:
     return SummarizeStockUseCase(
         embedding=_embedding(),
@@ -84,6 +101,8 @@ def get_summarize_stock_use_case() -> SummarizeStockUseCase:
         llm=_llm(),
         trace=_trace(),
         cache=_cache(),
+        query_rewrite=_query_rewrite(),
+        sector_fallback=_sector_fallback(),
     )
 
 

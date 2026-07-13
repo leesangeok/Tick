@@ -27,25 +27,23 @@ class Settings(BaseSettings):
     retrieval_days_window: int = 14
     # hybrid 검색에서 dense/sparse 각각의 초기 후보 개수. rerank 는 이걸 병합해 top_k 로 좁힌다.
     retrieval_initial_k: int = 20
+    # RRF 병합 점수에 published_at 기반 지수 감쇠 (반감기 = N 일). 0 이면 비활성.
+    # 급등락 이유 요약은 최신 뉴스가 중요. dense/sparse rank 는 시간 무관이라 결합해 신선도 보정.
+    retrieval_freshness_half_life_days: float = 3.0
+
+    # 쿼리 재작성 — Haiku 로 base_query 를 다변량 쿼리로 확장 후 variant별 hybrid 검색 → RRF 병합.
+    # 종목별 이슈 (실적/이벤트/섹터) 를 다양한 관점에서 잡아 recall 향상.
+    # 실패 시 base_query 로 fallback.
+    query_rewrite_enabled: bool = False
+    query_rewrite_model: str = "claude-haiku-4-5"
 
     # Cohere Rerank — 비면 rerank 스킵 (RRF 순위 그대로 사용).
     cohere_api_key: str = ""
     cohere_rerank_model: str = "rerank-v3.5"
 
-    # LLM-as-a-judge 를 N회 병렬 호출해 지표별 median 을 사용. 홀수 권장.
-    # 1 이면 단일 호출 (하위호환). 3 이면 outlier 완화 + 비용 3배.
-    judge_repeat: int = 3
-    # 판정 편차 (표준편차) 가 threshold 를 넘으면 자동 재판정 (extras 회 추가 → total 홀수 유지).
-    # 판정 3회로도 stochasticity 가 안 잡히는 종목만 선택적으로 재판정. 0 이면 재판정 비활성.
-    judge_std_threshold_grounded: float = 0.15
-    judge_std_threshold_halluc: float = 1.0
-    judge_retry_extras: int = 4
-
-    # 다중 judge (판정 편향 교차검증). True 면 Sonnet 4.6 + Opus 4.7 두 세대의 Claude 로 병렬
-    # 판정 후 지표별 median-of-medians. 두 모델 간 판정 편차 (disagreement σ) 도 함께 기록.
-    # OpenAI 는 이 프로젝트에서 embedding 전용이라 chat judge 로는 사용 X.
-    judge_multi_enabled: bool = False
-    opus_judge_model: str = "claude-opus-4-7"
+    # ---- Multi-judge / eval 설정은 evals/eval_settings.py 로 이동. ----
+    # 이유: prod 요약 use case 가 실수로 참조하면 요청당 최대 7회 LLM 판정 호출로 비용 폭발.
+    # eval 파이프라인만 참조하도록 물리적 격리.
 
     # Redis — summary 응답 캐시. host 비어있으면 NoOp 으로 자동 fallback.
     redis_host: str = ""

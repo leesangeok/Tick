@@ -7,5 +7,9 @@ from app.domain.value_objects.stock_symbol import StockSymbol
 
 class LlmPort(Protocol):
     async def generate_stock_summary(
-        self, symbol: StockSymbol, stock_name: str, news: list[RetrievedNews]
+        self,
+        symbol: StockSymbol,
+        stock_name: str,
+        news: list[RetrievedNews],
+        is_sector_fallback: bool = False,
     ) -> AiSummary: ...

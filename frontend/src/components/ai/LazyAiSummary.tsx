@@ -28,11 +28,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
  * fetch 실패 / 401 / 503 / 요약 미생성 등은 status="empty" 로 skeleton 자리에 안내 카드.
  */
 export function LazyAiSummary({ symbol, stockName, compact = false }: Props) {
+  // symbol 이 바뀌면 새 mount 로 취급 → key 로 즉시 초기화. effect body 에서 setState 하는
+  // React 19 anti-pattern 회피. 초기값이 곧 "loading" 이라 별도 리셋 불필요.
+  return <LazyAiSummaryInner key={symbol} symbol={symbol} stockName={stockName} compact={compact} />;
+}
+
+function LazyAiSummaryInner({ symbol, stockName, compact }: Props) {
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
     let cancelled = false;
-    setState({ status: "loading" });
     fetchAiSummaryFromBrowser(symbol, API_URL).then((summary) => {
       if (cancelled) return;
       setState(summary ? { status: "success", summary } : { status: "empty" });

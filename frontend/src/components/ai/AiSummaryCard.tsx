@@ -43,7 +43,36 @@ export function AiSummaryCard({ symbol, stockName, summary, compact = false }: P
           <ul className="space-y-1">
             {keyReasons.map((reason, i) => (
               <li key={i} className="text-xs text-muted-foreground">
-                · {reason}
+                · {reason.text}
+                {reason.sourceIndices.length > 0 && (
+                  <span className="ml-1 inline-flex gap-1">
+                    {reason.sourceIndices.map((idx) => {
+                      const src = summary.sources[idx - 1];
+                      if (!src) return null;
+                      const label = `#${idx}`;
+                      return src.sourceUrl ? (
+                        <a
+                          key={`${i}-${idx}`}
+                          href={src.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={src.title}
+                          className="rounded bg-muted px-1 text-[10px] tabular-nums text-muted-foreground hover:text-foreground"
+                        >
+                          {label}
+                        </a>
+                      ) : (
+                        <span
+                          key={`${i}-${idx}`}
+                          title={src.title}
+                          className="rounded bg-muted px-1 text-[10px] tabular-nums text-muted-foreground"
+                        >
+                          {label}
+                        </span>
+                      );
+                    })}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

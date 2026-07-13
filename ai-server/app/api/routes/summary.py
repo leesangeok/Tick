@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.schemas.summary import (
+    KeyReasonDto,
     StockSummaryRequest,
     StockSummaryResponse,
     SummarySourceDto,
@@ -34,10 +35,13 @@ async def post_summary(
     return StockSummaryResponse(
         symbol=s.symbol,
         summary=s.summary,
-        key_reasons=s.key_reasons,
+        key_reasons=[
+            KeyReasonDto(text=kr.text, source_indices=kr.source_indices) for kr in s.key_reasons
+        ],
         risk_notes=s.risk_notes,
         sources=[
             SummarySourceDto(
+                news_id=src.news_id,
                 title=src.title,
                 source=src.source,
                 source_url=src.source_url,

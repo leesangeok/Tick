@@ -10,16 +10,26 @@
  */
 
 export type AiSummarySource = {
+  newsId: number;
   title: string;
   source: string | null;
   sourceUrl: string | null;
   publishedAt: string;
 };
 
+/**
+ * 근거 문장 + 뒷받침 뉴스 인덱스 (1-based, `sources` 배열 인덱스).
+ * `sources[i-1]` 로 lookup 하여 원문 링크/하이라이트에 사용.
+ */
+export type AiKeyReason = {
+  text: string;
+  sourceIndices: number[];
+};
+
 export type AiSummaryResponse = {
   symbol: string;
   summary: string;
-  keyReasons: string[];
+  keyReasons: AiKeyReason[];
   riskNotes: string[];
   sources: AiSummarySource[];
   retrievedCount: number;

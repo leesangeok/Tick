@@ -1,9 +1,9 @@
 package app.tick.market.adapter.`in`.websocket
 
-import app.tick.market.adapter.out.broadcast.InProcessBroadcastAdapter
 import app.tick.market.application.port.`in`.SubscribeMarketUseCase
 import app.tick.market.application.port.`in`.SubscriptionCapExceededException
 import app.tick.market.application.port.`in`.UnsubscribeMarketUseCase
+import app.tick.market.application.port.out.BroadcastPort
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
@@ -30,15 +30,14 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
  *
  * 세션 종료 시 자동 unsubscribe → KIS 세션당 40개 제한 안 넘게.
  *
- * BroadcastPort 구현체 [InProcessBroadcastAdapter] 의 `attach/detach` 를 직접 호출 —
- * 추상 port 에 세션 개념까지 밀어넣으면 인터페이스 오염이라 어댑터를 직접 안다.
- * (도메인이 어댑터를 아는 게 아니라, 다른 어댑터가 어댑터를 아는 것 — 허용.)
+ * attach/detach 는 이제 BroadcastPort 에 정의 — 구현체가 InProcess/Redis 로 바뀌어도 handler
+ * 코드는 그대로. mode 는 `tick.market.broadcast.mode` 로 결정.
  */
 @Component
 class MarketWebSocketHandler(
     private val subscribeUseCase: SubscribeMarketUseCase,
     private val unsubscribeUseCase: UnsubscribeMarketUseCase,
-    private val broadcast: InProcessBroadcastAdapter,
+    private val broadcast: BroadcastPort,
     private val objectMapper: ObjectMapper,
 ) : TextWebSocketHandler() {
     private val log = LoggerFactory.getLogger(javaClass)

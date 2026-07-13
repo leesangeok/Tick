@@ -15,7 +15,7 @@ from redis.exceptions import RedisError
 
 from app.application.results.stock_summary_result import StockSummaryResult
 from app.config.settings import settings
-from app.domain.models.ai_summary import AiSummary, SummarySource
+from app.domain.models.ai_summary import AiSummary, KeyReason, SummarySource
 from app.domain.value_objects.stock_symbol import StockSymbol
 
 log = logging.getLogger("tick.ai.cache")
@@ -77,10 +77,15 @@ def _to_dict(result: StockSummaryResult) -> dict:
 
 def _to_result(payload: dict) -> StockSummaryResult:
     s = payload["summary"]
+    # key_reasons 는 도메인 확장 후 KeyReason(text, source_indices). 예전 캐시 (list[str]) 는
+    # KeyReason 이 아니므로 재구성 실패 → get() 의 except 로 cache miss 처리되고 재생성됨.
     summary = AiSummary(
         symbol=s["symbol"],
         summary=s["summary"],
-        key_reasons=list(s.get("key_reasons", [])),
+        key_reasons=[
+            KeyReason(text=kr["text"], source_indices=list(kr.get("source_indices", [])))
+            for kr in s.get("key_reasons", [])
+        ],
         risk_notes=list(s.get("risk_notes", [])),
         sources=[SummarySource(**src) for src in s.get("sources", [])],
     )
